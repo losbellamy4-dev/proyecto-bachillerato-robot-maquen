@@ -1,0 +1,2279 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark" data-accent="green">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Seguridad Vial · micro:bit</title>
+<meta name="description" content="Controla el coche Maqueen con micro:bit por Bluetooth desde el móvil.">
+<meta name="theme-color" content="#060a11">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23060a11'/%3E%3Crect x='9' y='18' width='46' height='28' rx='12' fill='none' stroke='%2334e27a' stroke-width='5'/%3E%3Ccircle cx='25' cy='32' r='4' fill='%2334e27a'/%3E%3Ccircle cx='39' cy='32' r='4' fill='%2334e27a'/%3E%3C/svg%3E">
+
+<!-- Tipografías (si no hay internet, se usan las del sistema y todo sigue funcionando) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<!-- Aplica el tema guardado ANTES de pintar, para que no haya parpadeo de colores -->
+<script>
+  (function () {
+    try {
+      var p = JSON.parse(localStorage.getItem('sv-prefs-v1') || '{}');
+      var d = document.documentElement;
+      d.dataset.theme = p.theme === 'light' ? 'light' : 'dark';
+      d.dataset.accent = ['green', 'cyan', 'violet'].indexOf(p.accent) >= 0 ? p.accent : 'green';
+    } catch (e) { /* sin almacenamiento: valores por defecto */ }
+  })();
+</script>
+
+<style>
+/* =====================================================================
+   1. TOKENS DE DISEÑO
+   Todos los colores, curvas y radios salen de aquí: así el tema claro/oscuro
+   y el color de acento cambian toda la app de golpe y todo es coherente.
+   ===================================================================== */
+:root {
+  --ease: cubic-bezier(.22, 1, .36, 1);      /* ease-out elegante: la curva "de la casa" */
+  --ease-io: cubic-bezier(.65, 0, .35, 1);
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --r-lg: 24px;
+  --r-md: 18px;
+  /* Colores de estado (en formato "R G B" para poder usar transparencias) */
+  --ok: 52 226 122;
+  --warn: 255 176 32;
+  --danger: 255 59 78;
+  --off: 139 151 170;
+  --amber: 255 184 46;
+  --pad: min(80vw, 330px, 41dvh);            /* tamaño de la cruceta */
+}
+
+:root, :root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #060a11;
+  --bg-2: #0c1524;
+  --text: #e9eef6;
+  --muted: #8b97aa;
+  --faint: rgba(255, 255, 255, .055);
+  --faint-2: rgba(255, 255, 255, .09);
+  --line: rgba(255, 255, 255, .085);
+  --glass: rgba(17, 25, 39, .55);
+  --glass-strong: rgba(15, 22, 35, .82);
+  --glass-hi: rgba(255, 255, 255, .07);
+  --glass-border: rgba(255, 255, 255, .085);
+  --shadow: 0 18px 40px -14px rgba(0, 0, 0, .65);
+  --dot: rgba(255, 255, 255, .075);
+  --orb-k: 1;
+  --glow-k: 1;                                /* intensidad del neón: más en oscuro */
+  --key-top: #273349;
+  --key-bot: #19212f;
+  --key-side: #0a0f18;
+  --key-text: #c9d3e2;
+  --plate: radial-gradient(circle at 50% 38%, rgba(255,255,255,.07), rgba(255,255,255,.02) 55%, rgba(255,255,255,.01) 70%);
+  --scrim: rgba(2, 5, 10, .62);
+  --on-a: #04130a;
+  --seg-thumb: rgba(255, 255, 255, .11);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #edf1f6;
+  --bg-2: #f8fafc;
+  --text: #0e1726;
+  --muted: #5d697c;
+  --faint: rgba(15, 23, 42, .045);
+  --faint-2: rgba(15, 23, 42, .085);
+  --line: rgba(15, 23, 42, .08);
+  --glass: rgba(255, 255, 255, .6);
+  --glass-strong: rgba(255, 255, 255, .86);
+  --glass-hi: rgba(255, 255, 255, .95);
+  --glass-border: rgba(255, 255, 255, .9);
+  --shadow: 0 16px 36px -16px rgba(30, 41, 59, .28);
+  --dot: rgba(15, 23, 42, .085);
+  --orb-k: .7;
+  --glow-k: .45;
+  --key-top: #ffffff;
+  --key-bot: #e8edf4;
+  --key-side: #c4cdd9;
+  --key-text: #334155;
+  --plate: radial-gradient(circle at 50% 38%, rgba(255,255,255,.9), rgba(255,255,255,.45) 55%, rgba(255,255,255,.25) 70%);
+  --scrim: rgba(15, 23, 42, .42);
+  --on-a: #ffffff;
+  --seg-thumb: #ffffff;
+  --ok: 22 163 74;
+  --warn: 217 119 6;
+  --danger: 225 29 56;
+  --off: 100 116 139;
+  --amber: 217 119 6;
+}
+
+/* Colores de acento elegibles (versión oscura y versión clara con más contraste) */
+:root[data-accent="green"]  { --a: 52 226 122; }
+:root[data-accent="cyan"]   { --a: 34 211 238; }
+:root[data-accent="violet"] { --a: 167 139 250; }
+:root[data-theme="light"][data-accent="green"]  { --a: 22 163 74; }
+:root[data-theme="light"][data-accent="cyan"]   { --a: 8 145 178; }
+:root[data-theme="light"][data-accent="violet"] { --a: 124 58 237; }
+
+/* Transición suave al cambiar de tema (View Transitions API si existe) */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .5s; animation-timing-function: var(--ease); }
+
+/* =====================================================================
+   2. BASE
+   ===================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; overscroll-behavior: none; }
+body {
+  margin: 0;
+  min-height: 100dvh;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;                 /* evita el "tirar para recargar" mientras conduces */
+  overflow-x: hidden;
+}
+button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+button:focus { outline: none; }
+button:focus-visible, input:focus-visible { outline: 2px solid rgb(var(--a)); outline-offset: 3px; }
+svg.ic { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+body.lock { overflow: hidden; }
+
+/* =====================================================================
+   3. FONDO CON PROFUNDIDAD (parallax sutil)
+   Dos capas a distinta "distancia": rejilla de puntos y luces difusas.
+   Se mueven con el giroscopio o el dedo, muy poco, solo con transform.
+   ===================================================================== */
+.bg {
+  position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+  background: radial-gradient(120% 70% at 50% -10%, var(--bg-2), var(--bg) 62%);
+}
+.bg-grid {
+  position: absolute; inset: -40px;
+  background-image: radial-gradient(circle at center, var(--dot) 1.1px, transparent 1.7px);
+  background-size: 24px 24px;
+  -webkit-mask-image: radial-gradient(ellipse 85% 70% at 50% 45%, #000 25%, transparent 82%);
+          mask-image: radial-gradient(ellipse 85% 70% at 50% 45%, #000 25%, transparent 82%);
+  will-change: transform;
+}
+.bg-depth { position: absolute; inset: 0; will-change: transform; }
+.bg-orb { position: absolute; width: 75vmax; height: 75vmax; border-radius: 50%; opacity: var(--orb-k); }
+.bg-orb.o1 { left: -32vmax; top: -34vmax; background: radial-gradient(closest-side, rgb(var(--a) / .14), transparent 72%); }
+.bg-orb.o2 { right: -36vmax; bottom: -40vmax; background: radial-gradient(closest-side, rgba(56, 140, 248, .12), transparent 72%); }
+
+/* =====================================================================
+   4. INTRO (logo 3D → modo programación → explosión)
+   La intro es siempre oscura (cinematográfica) y la anima JS frame a frame.
+   ===================================================================== */
+.intro {
+  position: fixed; inset: 0; z-index: 100; overflow: hidden;
+  display: grid; place-items: center;
+  background: radial-gradient(90% 60% at 50% 42%, #0c1828 0%, #060b14 55%, #030509 100%);
+  cursor: pointer; user-select: none; -webkit-user-select: none;
+  color: #e9eef6;
+}
+.intro::before {
+  content: ""; position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,.05) 1px, transparent 1.6px);
+  background-size: 24px 24px;
+  -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 45%, #000, transparent 75%);
+          mask-image: radial-gradient(ellipse 60% 50% at 50% 45%, #000, transparent 75%);
+}
+.intro-stage {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center;
+  gap: clamp(26px, 6vh, 46px);
+  perspective: 900px;
+  margin-top: -3vh;
+}
+.logo-wrap { position: relative; width: min(60vw, 270px); }
+.logo3d {
+  position: relative; z-index: 1; opacity: 0;
+  transform-origin: 50% 40%;
+  will-change: transform, opacity;
+}
+.logo-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.logo-text { font-family: var(--font); font-weight: 800; font-size: 47px; letter-spacing: -1.2px; }
+.glow, .floor { position: absolute; left: 50%; border-radius: 50%; opacity: 0; pointer-events: none; will-change: transform, opacity; }
+.glow { top: 34%; width: 200%; aspect-ratio: 1.45; transform: translate(-50%, -50%); }
+.glow-blue  { background: radial-gradient(closest-side, rgba(64,170,255,.42), rgba(40,120,255,.12) 52%, transparent 74%); }
+.glow-green { background: radial-gradient(closest-side, rgba(50,235,125,.48), rgba(0,200,100,.13) 52%, transparent 74%); }
+.floor { bottom: -9%; width: 86%; height: 13%; transform: translateX(-50%); }
+.floor-blue  { background: radial-gradient(closest-side, rgba(90,185,255,.38), transparent); }
+.floor-green { background: radial-gradient(closest-side, rgba(70,240,140,.42), transparent); }
+
+/* Panel de "código escribiéndose solo" */
+.code-panel {
+  width: min(86vw, 340px);
+  padding: 12px 15px 12px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(14, 32, 25, .82), rgba(8, 20, 16, .82));
+  border: 1px solid rgba(52, 226, 122, .18);
+  box-shadow: 0 24px 50px -24px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.06);
+  font: 500 clamp(10px, 3.05vw, 12px)/1.7 var(--mono);
+  color: #c6ecd6;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.code-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; color: rgba(198, 236, 214, .45); font-size: 10.5px; letter-spacing: .06em; }
+.code-head i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.14); }
+.code-head i:first-child { background: rgba(52, 226, 122, .6); }
+.code-head span { margin-left: auto; }
+.code-lines { min-height: calc(5 * 1.7em); }
+.code-lines .ln { display: block; white-space: pre; overflow: hidden; }
+.code-lines .k { color: #6ff0a8; } .code-lines .f { color: #82d8ff; } .code-lines .s { color: #ffd479; }
+.code-lines .n { color: #ff9f6e; } .code-lines .o { color: #d5e3dc; }
+.caret { display: inline-block; width: .55em; height: 1.1em; margin-left: 1px; vertical-align: -.2em; background: #6effa8; animation: blink .9s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.progress { position: relative; height: 3px; margin-top: 10px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; }
+.progress i { position: absolute; inset: 0; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, #2bd4f0, #34e27a); box-shadow: 0 0 12px rgba(52,226,122,.7); }
+.progress-meta { display: flex; justify-content: space-between; margin-top: 7px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: rgba(198, 236, 214, .55); }
+.progress-meta b { color: #7dffb0; font-weight: 600; }
+
+.intro-flash {
+  position: absolute; z-index: 2; left: 50%; top: 45%;
+  width: 240vmax; height: 240vmax; border-radius: 50%;
+  background: radial-gradient(circle, rgba(240,255,246,.95) 0%, rgba(110,245,165,.55) 4%, rgba(40,210,120,.2) 10%, rgba(20,160,90,.06) 18%, transparent 30%);
+  transform: translate(-50%, -50%) scale(.4); opacity: 0;
+  pointer-events: none; will-change: transform, opacity;
+}
+#fx { position: absolute; inset: 0; z-index: 3; width: 100%; height: 100%; pointer-events: none; }
+.intro-skip {
+  position: absolute; z-index: 4; left: 0; right: 0;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 26px);
+  text-align: center; font: 500 11px var(--font); letter-spacing: .16em; text-transform: uppercase;
+  color: rgba(255, 255, 255, .34); opacity: 0;
+}
+
+/* =====================================================================
+   5. LAYOUT DE LA APP
+   ===================================================================== */
+.app {
+  position: relative; z-index: 1;
+  max-width: 480px; min-height: 100dvh; margin: 0 auto;
+  padding: max(12px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 12px;
+}
+/* Entrada escalonada de las piezas al salir de la explosión */
+.reveal {
+  opacity: 0; transform: translateY(16px) scale(.985);
+  transition: opacity .8s var(--ease), transform .95s var(--ease);
+  transition-delay: calc(var(--i, 0) * 70ms);
+}
+body.app-in .reveal { opacity: 1; transform: none; }
+
+/* Vidrio esmerilado (glassmorphism) */
+.card {
+  position: relative;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow), inset 0 1px 0 var(--glass-hi);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+          backdrop-filter: blur(16px) saturate(140%);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .card { background: var(--glass-strong); }
+}
+
+/* ---------- Cabecera ---------- */
+.topbar { display: flex; align-items: center; gap: 8px; padding: 9px 10px 9px 9px; z-index: 5; }
+.brand { display: flex; align-items: center; gap: 11px; min-width: 0; flex: 1; }
+.brand-mark {
+  position: relative; width: 44px; height: 44px; flex: none; border-radius: 14px;
+  display: grid; place-items: center; overflow: hidden;
+  background: linear-gradient(150deg, rgb(var(--a)), rgb(var(--a) / .62));
+  color: var(--on-a);
+  box-shadow: 0 8px 20px -8px rgb(var(--a) / calc(.8 * var(--glow-k))), inset 0 1px 0 rgba(255,255,255,.45);
+}
+.brand-mark::after { content: ""; position: absolute; inset: 0 0 50% 0; background: linear-gradient(180deg, rgba(255,255,255,.35), transparent); }
+.brand-mark svg { width: 28px; height: auto; position: relative; }
+.brand-text { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; line-height: 1.15; }
+.brand-text b { display: block; max-width: 100%; font-size: 16px; font-weight: 750; letter-spacing: -.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.brand-text b small { font-size: 12px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+
+/* Indicador de estado: color + icono + texto */
+.status {
+  display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 9px 0 6px;
+  border-radius: 99px; background: var(--faint); border: 1px solid var(--line);
+  font-size: 11px; font-weight: 650; color: rgb(var(--off)); white-space: nowrap;
+  transition: color .35s, background-color .35s, border-color .35s;
+}
+.status-ic { position: relative; display: grid; place-items: center; width: 13px; height: 13px; }
+.status-ic svg { width: 13px; height: 13px; stroke-width: 2.4; }
+.status-ic::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 1.5px solid currentColor; opacity: 0; }
+.status[data-state="connecting"] { color: rgb(var(--warn)); background: rgb(var(--warn) / .1); border-color: rgb(var(--warn) / .25); }
+.status[data-state="connecting"] .status-ic svg { animation: breathe 1s var(--ease-io) infinite alternate; }
+.status[data-state="connected"] { color: rgb(var(--ok)); background: rgb(var(--ok) / .1); border-color: rgb(var(--ok) / .28); }
+.status[data-state="connected"] .status-ic::after { animation: halo 2.2s var(--ease) infinite; }
+@keyframes breathe { from { opacity: .35; transform: scale(.9); } to { opacity: 1; transform: scale(1.05); } }
+@keyframes halo { 0% { opacity: .7; transform: scale(.6); } 70%, 100% { opacity: 0; transform: scale(1.5); } }
+
+@media (max-width: 350px) { .brand-text b small { display: none; } }
+
+.icon-btn {
+  width: 38px; height: 38px; flex: none; display: grid; place-items: center;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--faint); color: var(--muted);
+  transition: transform .2s var(--ease), color .2s, background-color .2s;
+}
+.icon-btn:active { transform: scale(.92); }
+.icon-btn:hover { color: var(--text); }
+
+/* ---------- Aviso de compatibilidad ---------- */
+.notice { display: flex; gap: 12px; padding: 13px 14px; border-color: rgb(var(--warn) / .3); }
+.notice-ic { width: 34px; height: 34px; flex: none; border-radius: 11px; display: grid; place-items: center; background: rgb(var(--warn) / .14); color: rgb(var(--warn)); }
+.notice b { display: block; font-size: 14px; margin: 1px 0 3px; }
+.notice p { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+
+/* ---------- Botón Conectar con anillo radar ---------- */
+.connect-card { padding: 8px; display: flex; align-items: center; }
+.connect-btn {
+  position: relative; width: 100%; display: flex; align-items: center; gap: 14px;
+  padding: 9px 14px 9px 9px; border: 0; border-radius: 18px; text-align: left;
+  background: linear-gradient(120deg, rgb(var(--a) / .17), rgb(var(--a) / .04) 70%);
+  transition: transform .25s var(--ease), background-color .4s;
+}
+.connect-btn:active { transform: scale(.985); }
+.connect-btn.shake { animation: shake .45s var(--ease); }
+@keyframes shake { 20% { transform: translateX(-6px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+.cb-orb {
+  position: relative; width: 52px; height: 52px; flex: none; border-radius: 50%;
+  display: grid; place-items: center; color: var(--on-a);
+  background: radial-gradient(circle at 35% 28%, rgb(var(--a)), rgb(var(--a) / .7) 60%, rgb(var(--a) / .5));
+  box-shadow: 0 10px 24px -8px rgb(var(--a) / calc(.85 * var(--glow-k))), inset 0 1px 0 rgba(255,255,255,.45);
+  transition: background .4s, box-shadow .4s;
+}
+.cb-orb svg { width: 24px; height: 24px; position: relative; z-index: 1; }
+.radar { position: absolute; inset: -7px; border-radius: 50%; opacity: 0; transition: opacity .35s var(--ease); pointer-events: none; }
+.radar-sweep {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(from 0deg, rgb(var(--a) / 0) 0deg, rgb(var(--a) / 0) 220deg, rgb(var(--a) / .9) 360deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 78%, #000 80%, #000 99%, transparent 100%);
+          mask: radial-gradient(closest-side, transparent 78%, #000 80%, #000 99%, transparent 100%);
+}
+.radar-wave { position: absolute; inset: 7px; border-radius: 50%; border: 1.5px solid rgb(var(--a) / .65); opacity: 0; }
+.connect-btn[data-state="connecting"] .radar { opacity: 1; }
+.connect-btn[data-state="connecting"] .radar-sweep { animation: spin 1.05s linear infinite; }
+.connect-btn[data-state="connecting"] .radar-wave { animation: wave 1.7s var(--ease) infinite; }
+.connect-btn[data-state="connecting"] .radar-wave.w2 { animation-delay: .85s; }
+.connect-btn[data-state="connecting"] .cb-orb { background: radial-gradient(circle at 35% 28%, rgb(var(--a) / .55), rgb(var(--a) / .28)); box-shadow: none; color: var(--text); }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes wave { from { transform: scale(1); opacity: .8; } to { transform: scale(2.1); opacity: 0; } }
+.connect-btn[data-state="connected"] { background: linear-gradient(120deg, rgb(var(--ok) / .14), rgb(var(--ok) / .03) 70%); }
+.connect-btn[data-state="connected"] .cb-orb { background: radial-gradient(circle at 35% 28%, rgb(var(--ok)), rgb(var(--ok) / .7) 60%, rgb(var(--ok) / .5)); box-shadow: 0 10px 24px -8px rgb(var(--ok) / calc(.85 * var(--glow-k))), inset 0 1px 0 rgba(255,255,255,.45); }
+.cb-flash { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgb(var(--ok)); opacity: 0; pointer-events: none; }
+.cb-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.cb-text b { font-size: 16.5px; font-weight: 700; letter-spacing: -.2px; }
+.cb-text small { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cb-go { color: var(--muted); opacity: .7; }
+.connect-btn[data-state="connected"] .cb-go { transform: rotate(0); }
+
+/* ---------- Cruceta 3D ---------- */
+.pad-card { display: grid; place-items: center; padding: 6px 0 4px; }
+.pad {
+  position: relative; width: var(--pad); height: var(--pad);
+  display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+  grid-template-areas: ". up ." "left stop right" ". down .";
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+.pad::before {             /* disco base de vidrio con anillos concéntricos */
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  background: var(--plate);
+  border: 1px solid var(--line);
+  box-shadow: inset 0 2px 30px rgba(0,0,0,.18), 0 30px 60px -30px rgba(0,0,0,.5);
+}
+.pad::after {
+  content: ""; position: absolute; inset: 17%; border-radius: 50%;
+  border: 1px dashed var(--line); opacity: .8;
+}
+.pad-trail {               /* estela de luz hacia la dirección pulsada */
+  position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(48% 48% at var(--tx, 50%) var(--ty, 50%), rgb(var(--a) / calc(.34 * var(--glow-k) + .06)), transparent 72%);
+  opacity: 0; transition: opacity .5s var(--ease);
+}
+.pad[data-moving="1"] .pad-trail { opacity: 1; transition-duration: .15s; }
+.pad[data-last="avanzar"]   .pad-trail { --tx: 50%; --ty: 6%; }
+.pad[data-last="atras"]     .pad-trail { --tx: 50%; --ty: 94%; }
+.pad[data-last="izquierda"] .pad-trail { --tx: 6%;  --ty: 50%; }
+.pad[data-last="derecha"]   .pad-trail { --tx: 94%; --ty: 50%; }
+
+.dbtn {
+  position: relative; margin: 9%; padding: 0; border: 0; border-radius: 26px;
+  align-self: stretch; justify-self: stretch;
+  background: transparent; color: var(--key-text); touch-action: none;
+}
+.dbtn.up { grid-area: up; } .dbtn.down { grid-area: down; } .dbtn.left { grid-area: left; } .dbtn.right { grid-area: right; }
+.dbtn::before {            /* lateral del botón: da el "grosor" físico */
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  background: var(--key-side); transform: translateY(6px);
+  box-shadow: 0 14px 22px -10px rgba(0,0,0,.55);
+}
+.dbtn .face {
+  position: absolute; inset: 0; border-radius: inherit; overflow: hidden;
+  display: grid; place-items: center; align-content: center; gap: 2px;
+  background: linear-gradient(180deg, var(--key-top), var(--key-bot));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16), inset 0 -10px 18px -12px rgba(0,0,0,.4);
+  transition: transform .14s var(--ease);
+}
+.dbtn .face::after {       /* brillo de energía al pulsar */
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  background: radial-gradient(85% 85% at 50% 35%, rgb(var(--a) / .5), transparent 72%);
+  opacity: 0; transition: opacity .45s var(--ease);
+}
+.dbtn svg { width: 30px; height: 30px; stroke-width: 2.4; position: relative; z-index: 1; transition: color .2s; }
+.dbtn small { position: relative; z-index: 1; font-size: 9.5px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; opacity: .55; }
+.dbtn.is-pressed { color: rgb(var(--a)); }
+.dbtn.is-pressed .face { transform: translateY(5px); box-shadow: inset 0 4px 12px rgba(0,0,0,.42), inset 0 0 0 1px rgb(var(--a) / .45); }
+.dbtn.is-pressed .face::after { opacity: calc(.75 * var(--glow-k) + .25); transition-duration: .06s; }
+
+.stop-btn {
+  grid-area: stop; place-self: center; position: relative;
+  width: 86%; aspect-ratio: 1; padding: 0; border: 0; border-radius: 50%; background: transparent;
+  touch-action: none; color: #fff;
+}
+.stop-btn::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: #6d0c19; transform: translateY(6px); box-shadow: 0 16px 26px -10px rgba(120, 10, 30, .6); }
+.stop-btn::after {         /* aro exterior tipo seta de emergencia */
+  content: ""; position: absolute; inset: -9%; border-radius: 50%;
+  border: 1.5px solid rgb(var(--danger) / .35);
+  box-shadow: 0 0 22px rgb(var(--danger) / calc(.28 * var(--glow-k)));
+}
+.stop-face {
+  position: absolute; inset: 0; border-radius: 50%; z-index: 1;
+  display: grid; place-items: center; align-content: center; gap: 1px;
+  background: radial-gradient(circle at 50% 28%, #ff7884, #ec2440 52%, #b8122b);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.38), inset 0 -8px 14px rgba(0,0,0,.25);
+  transition: transform .14s var(--ease);
+}
+.stop-face svg { width: 22px; height: 22px; stroke-width: 2.2; opacity: .9; }
+.stop-face b { font-size: 11.5px; font-weight: 800; letter-spacing: .14em; }
+.stop-btn.is-pressed .stop-face { transform: translateY(5px); box-shadow: inset 0 4px 12px rgba(0,0,0,.35); }
+.stop-ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgb(var(--danger)); opacity: 0; pointer-events: none; z-index: 0; }
+
+/* ---------- Velocidad con arco ---------- */
+.speed-card { display: flex; align-items: center; gap: 14px; padding: 12px 16px 12px 12px; --spd: rgb(52 226 122); --p: 60%; }
+.gauge { position: relative; width: 88px; height: 88px; flex: none; }
+.gauge svg { width: 100%; height: 100%; overflow: visible; }
+.g-track { fill: none; stroke: var(--faint-2); stroke-width: 8; stroke-linecap: round; }
+.g-val {
+  fill: none; stroke: var(--spd); stroke-width: 8; stroke-linecap: round;
+  stroke-dasharray: 60 100;
+  transition: stroke-dasharray .3s var(--ease), stroke .3s;
+}
+:root[data-theme="dark"] .g-val { filter: drop-shadow(0 0 5px var(--spd)); }
+.gauge-read { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; padding-top: 4px; }
+.gauge-read b { font-size: 26px; font-weight: 750; letter-spacing: -1px; font-variant-numeric: tabular-nums; line-height: 1; }
+.gauge-read small { font-size: 9px; font-weight: 650; letter-spacing: .14em; color: var(--muted); margin-top: 3px; }
+.speed-ctl { flex: 1; min-width: 0; }
+.speed-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.speed-head span:first-child { font-size: 14.5px; font-weight: 650; }
+.speed-tag { font: 600 10.5px var(--mono); letter-spacing: .06em; padding: 3px 8px; border-radius: 99px; color: var(--spd); background: var(--faint); border: 1px solid var(--line); transition: color .3s; }
+.range { -webkit-appearance: none; appearance: none; width: 100%; height: 30px; margin: 0; background: transparent; cursor: pointer; }
+.range::-webkit-slider-runnable-track { height: 8px; border-radius: 8px; background: linear-gradient(90deg, var(--spd) 0 var(--p), var(--faint-2) var(--p) 100%); }
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 24px; height: 24px; margin-top: -8px; border-radius: 50%; border: 0;
+  background: #fff; box-shadow: 0 0 0 3px var(--spd), 0 6px 14px rgba(0,0,0,.35);
+  transition: transform .2s var(--ease);
+}
+.range:active::-webkit-slider-thumb { transform: scale(1.12); }
+.range::-moz-range-track { height: 8px; border-radius: 8px; background: var(--faint-2); }
+.range::-moz-range-progress { height: 8px; border-radius: 8px; background: var(--spd); }
+.range::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; border: 0; background: #fff; box-shadow: 0 0 0 3px var(--spd), 0 6px 14px rgba(0,0,0,.35); }
+.speed-scale { display: flex; justify-content: space-between; font: 500 10px var(--mono); color: var(--muted); opacity: .8; padding: 0 2px; }
+
+/* ---------- Extras ---------- */
+.extras { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.xbtn {
+  --tone: var(--a);
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  padding: 13px 6px 11px; border-radius: 20px;
+  transition: transform .25s var(--ease), border-color .3s;
+}
+.xbtn:active { transform: scale(.955); }
+.xbtn.lights { --tone: var(--amber); }
+.xbtn.safety { --tone: var(--ok); }
+.x-icon {
+  position: relative; width: 44px; height: 44px; border-radius: 14px;
+  display: grid; place-items: center; color: var(--muted);
+  background: var(--faint); border: 1px solid var(--line);
+  transition: color .3s, background-color .3s, border-color .3s, box-shadow .3s;
+}
+.x-icon svg { width: 22px; height: 22px; }
+.x-wave { position: absolute; inset: -1px; border-radius: 14px; border: 1.5px solid rgb(var(--tone)); opacity: 0; pointer-events: none; }
+.x-label { font-size: 13px; font-weight: 650; }
+.x-state { font: 600 10px var(--mono); letter-spacing: .08em; padding: 2px 8px; border-radius: 99px; background: var(--faint); color: var(--muted); transition: color .3s, background-color .3s; }
+.xbtn[aria-pressed="true"] { border-color: rgb(var(--tone) / .35); }
+.xbtn[aria-pressed="true"] .x-icon { color: rgb(var(--tone)); background: rgb(var(--tone) / .14); border-color: rgb(var(--tone) / .3); box-shadow: 0 0 22px rgb(var(--tone) / calc(.38 * var(--glow-k))); }
+.xbtn[aria-pressed="true"] .x-state { color: rgb(var(--tone)); background: rgb(var(--tone) / .13); }
+.xbtn.lights[aria-pressed="true"] .x-icon svg { animation: blinker 1s steps(1) infinite; }
+@keyframes blinker { 50% { opacity: .35; } }
+.xbtn.horn.honk .x-icon { color: rgb(var(--tone)); }
+
+/* ---------- Telemetría (último comando) ---------- */
+.telemetry {
+  display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
+  padding: 2px 4px 4px; font-size: 11.5px; color: var(--muted);
+}
+.telemetry code { font: 600 11.5px var(--mono); color: var(--text); padding: 3px 8px; border-radius: 8px; background: var(--faint); border: 1px solid var(--line); display: inline-flex; align-items: center; gap: 6px; }
+.telemetry code[data-state="offline"] { color: var(--muted); }
+.telemetry code[data-state="sent"]::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: rgb(var(--ok)); box-shadow: 0 0 6px rgb(var(--ok)); }
+.telemetry code[data-state="pending"]::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: rgb(var(--warn)); }
+.telemetry .sep { width: 1px; height: 14px; background: var(--line); }
+
+/* ---------- Pantalla ancha (PC/proyector) y móvil en horizontal ---------- */
+@media (min-width: 880px) {
+  :root { --pad: min(380px, 52vh); }
+  .app {
+    max-width: 940px; display: grid; gap: 16px 22px; align-content: center;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: "top top" "notice notice" "conn pad" "speed pad" "extras pad" "tele tele";
+  }
+  .topbar { grid-area: top; } .notice { grid-area: notice; } .connect-card { grid-area: conn; }
+  .pad-card { grid-area: pad; } .speed-card { grid-area: speed; } .extras { grid-area: extras; } .telemetry { grid-area: tele; }
+}
+/* Móvil en vertical con poca altura: todo compacto para que quepa sin desplazar */
+@media (orientation: portrait) and (max-height: 780px) {
+  :root { --pad: min(78vw, 330px, 37dvh); }
+  .app { gap: 10px; }
+  .topbar { padding-top: 7px; padding-bottom: 7px; }
+  .gauge { width: 76px; height: 76px; }
+  .speed-card { padding-top: 9px; padding-bottom: 9px; }
+  .xbtn { padding: 9px 6px 8px; gap: 5px; }
+  .x-icon { width: 38px; height: 38px; }
+}
+/* Móvil en horizontal: cruceta a la izquierda (a toda altura) y el resto a la derecha */
+@media (orientation: landscape) and (max-height: 560px) {
+  :root { --pad: min(82dvh, 330px); }
+  .app {
+    max-width: 920px; display: grid; gap: 8px 24px; align-content: center;
+    grid-template-columns: auto 1fr;
+    grid-template-areas: "pad top" "pad notice" "pad conn" "pad speed" "pad extras";
+    padding: max(8px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  }
+  .topbar { grid-area: top; padding: 6px 8px; } .notice { grid-area: notice; } .connect-card { grid-area: conn; padding: 6px; }
+  .pad-card { grid-area: pad; padding: 0; } .speed-card { grid-area: speed; padding: 6px 14px 6px 8px; } .extras { grid-area: extras; }
+  .telemetry { display: none; }
+  .brand-mark { width: 36px; height: 36px; }
+  .cb-orb { width: 42px; height: 42px; }
+  .gauge { width: 64px; height: 64px; } .gauge-read b { font-size: 20px; }
+  .xbtn { padding: 7px 6px; gap: 3px; } .x-icon { width: 32px; height: 32px; border-radius: 11px; }
+}
+
+/* =====================================================================
+   6. AVISOS (toasts) dentro de la estética
+   ===================================================================== */
+.toasts {
+  position: fixed; z-index: 90; left: 50%; transform: translateX(-50%);
+  top: max(10px, env(safe-area-inset-top));          /* sobre la cabecera: no tapa los controles */
+  width: min(calc(100% - 24px), 420px);
+  display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+}
+.toast {
+  --tone: var(--a);
+  pointer-events: auto; display: flex; align-items: center; gap: 12px;
+  padding: 11px 11px 11px 12px; border-radius: 18px;
+  background: var(--glass-strong); border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow), inset 0 1px 0 var(--glass-hi);
+  -webkit-backdrop-filter: blur(18px) saturate(150%); backdrop-filter: blur(18px) saturate(150%);
+  opacity: 0; transform: translateY(-14px) scale(.97);
+  transition: opacity .35s var(--ease), transform .55s var(--ease);
+}
+.toast.in { opacity: 1; transform: none; }
+.toast.out { opacity: 0; transform: translateY(-10px) scale(.97); }
+.toast.t-ok { --tone: var(--ok); } .toast.t-warn { --tone: var(--warn); } .toast.t-error { --tone: var(--danger); } .toast.t-info { --tone: var(--a); }
+.toast-ic { width: 34px; height: 34px; flex: none; border-radius: 11px; display: grid; place-items: center; color: rgb(var(--tone)); background: rgb(var(--tone) / .14); }
+.toast-ic svg { width: 18px; height: 18px; }
+.toast-body { flex: 1; min-width: 0; }
+.toast-body b { display: block; font-size: 14px; font-weight: 650; }
+.toast-body span { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.4; margin-top: 1px; }
+.toast-act { flex: none; height: 34px; padding: 0 13px; border: 0; border-radius: 11px; font-size: 13px; font-weight: 650; color: var(--on-a); background: rgb(var(--a)); }
+
+/* =====================================================================
+   7. DIÁLOGO DE BIENVENIDA / AJUSTES
+   ===================================================================== */
+.modal { position: fixed; inset: 0; z-index: 70; display: grid; place-items: end center; padding: 16px 14px max(16px, env(safe-area-inset-bottom)); }
+@media (min-width: 600px), (orientation: landscape) { .modal { place-items: center; } }
+.modal-scrim { position: absolute; inset: 0; background: var(--scrim); opacity: 0; transition: opacity .45s var(--ease); }
+.sheet {
+  position: relative; width: min(100%, 420px); max-height: calc(100dvh - 32px); overflow: auto;
+  padding: 22px 20px 18px; border-radius: 28px; background: var(--glass-strong);
+  opacity: 0; transform: translateY(28px) scale(.98);
+  transition: opacity .4s var(--ease), transform .65s var(--ease);
+}
+.modal.on .modal-scrim { opacity: 1; }
+.modal.on .sheet { opacity: 1; transform: none; }
+.sheet-hero { display: flex; justify-content: center; margin: 2px 0 14px; }
+.sheet-hero .brand-mark { width: 54px; height: 54px; border-radius: 17px; }
+.sheet-hero .brand-mark svg { width: 34px; }
+.sheet h2 { margin: 0; text-align: center; font-size: 21px; font-weight: 750; letter-spacing: -.4px; }
+.sheet > p { margin: 6px auto 16px; max-width: 32ch; text-align: center; font-size: 13.5px; line-height: 1.5; color: var(--muted); }
+.prefs { border-radius: 18px; background: var(--faint); border: 1px solid var(--line); padding: 4px 12px; margin-bottom: 16px; }
+.pref-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; }
+.pref-row + .pref-row { border-top: 1px solid var(--line); }
+.pref-row > span { font-size: 14px; font-weight: 600; }
+.seg { position: relative; display: grid; grid-template-columns: 1fr 1fr; padding: 3px; border-radius: 12px; background: var(--faint); border: 1px solid var(--line); min-width: 186px; }
+.seg button { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 6px; height: 34px; border: 0; background: none; border-radius: 9px; font-size: 13px; font-weight: 600; color: var(--muted); transition: color .3s; }
+.seg button svg { width: 15px; height: 15px; }
+.seg button[aria-checked="true"] { color: var(--text); }
+.seg-thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 9px; background: var(--seg-thumb); box-shadow: 0 2px 8px rgba(0,0,0,.18); transition: transform .45s var(--ease); }
+.seg[data-v="light"] .seg-thumb { transform: translateX(100%); }
+.swatches { display: flex; gap: 12px; }
+.swatches button { width: 28px; height: 28px; border-radius: 50%; border: 0; padding: 0; background: radial-gradient(circle at 35% 30%, rgb(var(--sw) / 1), rgb(var(--sw) / .7)); box-shadow: 0 0 0 0 transparent; transition: box-shadow .3s var(--ease), transform .3s var(--ease); }
+.swatches button[aria-checked="true"] { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px rgb(var(--sw)); transform: scale(1.05); }
+.switch { position: relative; width: 50px; height: 30px; border-radius: 99px; border: 0; padding: 0; background: var(--faint-2); transition: background-color .3s; }
+.switch i { position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.3); transition: transform .4s var(--ease); }
+.switch[aria-checked="true"] { background: rgb(var(--a)); }
+.switch[aria-checked="true"] i { transform: translateX(20px); }
+.sheet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btn { height: 48px; border-radius: 15px; border: 1px solid transparent; font-size: 15px; font-weight: 650; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform .2s var(--ease), background-color .3s; }
+.btn:active { transform: scale(.97); }
+.btn.primary { color: var(--on-a); background: linear-gradient(180deg, rgb(var(--a)), rgb(var(--a) / .82)); box-shadow: 0 10px 24px -10px rgb(var(--a) / calc(.9 * var(--glow-k))), inset 0 1px 0 rgba(255,255,255,.35); }
+.btn.ghost { color: var(--text); background: var(--faint); border-color: var(--line); }
+.btn svg { width: 18px; height: 18px; }
+
+/* =====================================================================
+   8. GUÍA PASO A PASO (foco sobre la interfaz real)
+   ===================================================================== */
+.tour { position: fixed; inset: 0; z-index: 75; touch-action: none; }
+.tour-hole {
+  position: fixed; left: 0; top: 0; width: 100px; height: 100px; border-radius: 20px;
+  box-shadow: 0 0 0 200vmax var(--scrim);
+  transition: transform .5s var(--ease), width .5s var(--ease), height .5s var(--ease), border-radius .5s var(--ease), opacity .4s;
+  pointer-events: none; opacity: 0;
+}
+.tour.on .tour-hole { opacity: 1; }
+.tour-hole::after {
+  content: ""; position: absolute; inset: -3px; border-radius: inherit;
+  border: 2px solid rgb(var(--a));
+  box-shadow: 0 0 22px rgb(var(--a) / calc(.55 * var(--glow-k))), inset 0 0 18px rgb(var(--a) / calc(.25 * var(--glow-k)));
+  animation: tourPulse 1.8s var(--ease-io) infinite alternate;
+}
+@keyframes tourPulse { from { opacity: .55; } to { opacity: 1; } }
+.tour-card {
+  position: fixed; left: 0; top: 0; width: 340px; padding: 16px 16px 14px; border-radius: 22px;
+  background: var(--glass-strong);
+  transition: transform .5s var(--ease), opacity .3s var(--ease);
+  opacity: 0;
+}
+.tour.on .tour-card { opacity: 1; }
+.tour-card.swap .tour-inner { opacity: 0; transform: translateY(6px); }
+.tour-inner { transition: opacity .25s var(--ease), transform .35s var(--ease); }
+.tour-step { font: 600 10.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: rgb(var(--a)); }
+.tour-card h3 { margin: 5px 0 4px; font-size: 17px; font-weight: 750; letter-spacing: -.2px; }
+.tour-card p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--muted); }
+.tour-foot { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+.tour-dots { display: flex; gap: 5px; flex: 1; }
+.tour-dots i { width: 6px; height: 6px; border-radius: 6px; background: var(--faint-2); transition: width .4s var(--ease), background-color .3s; }
+.tour-dots i.on { width: 18px; background: rgb(var(--a)); }
+.tour-foot .btn { height: 40px; padding: 0 14px; font-size: 14px; border-radius: 12px; }
+
+/* =====================================================================
+   9. MOVIMIENTO REDUCIDO (accesibilidad)
+   ===================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .reveal { transition-duration: .3s; transition-delay: 0s; transform: none; }
+  .radar-sweep, .radar-wave, .status-ic::after, .tour-hole::after { animation: none !important; }
+}
+</style>
+</head>
+<body class="lock">
+
+<!-- =====================================================================
+     ICONOS (dibujados a mano en SVG; se reutilizan con <use>)
+     ===================================================================== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-bt" viewBox="0 0 24 24"><path d="m7 7 10 10-5 5V2l5 5L7 17"/></symbol>
+    <symbol id="i-bt-off" viewBox="0 0 24 24"><path d="m17 17-5 5V12l-5 5"/><path d="m2 2 20 20"/><path d="M14.5 9.5 17 7l-5-5v4.5"/></symbol>
+    <symbol id="i-bt-on" viewBox="0 0 24 24"><path d="m7 7 10 10-5 5V2l5 5L7 17"/><path d="M18 12h3M3 12h3"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><path d="M7.9 2.5h8.2l5.4 5.4v8.2l-5.4 5.4H7.9l-5.4-5.4V7.9z"/><path d="M8 12h8"/></symbol>
+    <symbol id="i-horn" viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></symbol>
+    <symbol id="i-lights" viewBox="0 0 24 24"><path d="M10 5C6.1 5 3 8.1 3 12s3.1 7 7 7h1V5h-1z"/><path d="M15 8h6M15 12h6M15 16h6"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-guide" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16.2 7.8-2.1 6.3-6.3 2.1 2.1-6.3z"/></symbol>
+    <!-- Marca "carita" propia (inspirada, no oficial) para cabecera y diálogo -->
+    <symbol id="i-face" viewBox="0 0 260 160"><path d="M66 14H194A52 52 0 0 1 246 66V94A52 52 0 0 1 194 146H66A52 52 0 0 1 14 94V66A52 52 0 0 1 66 14Z" fill="none" stroke="currentColor" stroke-width="22"/><circle cx="92" cy="80" r="19" fill="currentColor"/><circle cx="168" cy="80" r="19" fill="currentColor"/></symbol>
+  </defs>
+</svg>
+
+<!-- Fondo con profundidad -->
+<div class="bg" aria-hidden="true">
+  <div class="bg-depth"><div class="bg-orb o1"></div><div class="bg-orb o2"></div></div>
+  <div class="bg-grid"></div>
+</div>
+
+<!-- =====================================================================
+     INTRO
+     ===================================================================== -->
+<div class="intro" id="intro" aria-label="Animación de inicio. Toca para saltar." role="img">
+  <div class="intro-stage">
+    <div class="logo-wrap" id="logoWrap">
+      <div class="glow glow-blue" id="glowBlue"></div>
+      <div class="glow glow-green" id="glowGreen"></div>
+      <div class="floor floor-blue" id="floorBlue"></div>
+      <div class="floor floor-green" id="floorGreen"></div>
+
+      <div class="logo3d" id="logo3d">
+        <!-- Logo 3D propio: cápsula + dos ojos + texto. Capas: lateral (grosor),
+             cara frontal metálica, brillo especular, reflejo que recorre y flujo de datos. -->
+        <svg class="logo-svg" viewBox="0 0 260 236" aria-hidden="true">
+          <defs>
+            <linearGradient id="gBlueFace" x1="0" y1="0" x2=".22" y2="1">
+              <stop offset="0" stop-color="#eefbff"/><stop offset=".26" stop-color="#9ae0ff"/>
+              <stop offset=".5" stop-color="#2aa9f4"/><stop offset=".74" stop-color="#1a4fd0"/>
+              <stop offset="1" stop-color="#7cc6ff"/>
+            </linearGradient>
+            <linearGradient id="gBlueSide" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#103e78"/><stop offset="1" stop-color="#041329"/>
+            </linearGradient>
+            <linearGradient id="gGreenFace" x1="0" y1="0" x2=".22" y2="1">
+              <stop offset="0" stop-color="#f2fff7"/><stop offset=".26" stop-color="#9dffc4"/>
+              <stop offset=".5" stop-color="#1fe372"/><stop offset=".74" stop-color="#05984b"/>
+              <stop offset="1" stop-color="#8effbd"/>
+            </linearGradient>
+            <linearGradient id="gGreenSide" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#0b5e2f"/><stop offset="1" stop-color="#021e10"/>
+            </linearGradient>
+            <linearGradient id="gSpec" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".42" stop-color="#fff" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="gSheen" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+            </linearGradient>
+            <radialGradient id="gEye" cx=".42" cy=".38" r=".62">
+              <stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#d8ffe8"/><stop offset="1" stop-color="#3dff8f" stop-opacity="0"/>
+            </radialGradient>
+            <g id="shapeAll">
+              <path id="capsulePath" d="M66 14H194A52 52 0 0 1 246 66V94A52 52 0 0 1 194 146H66A52 52 0 0 1 14 94V66A52 52 0 0 1 66 14Z" fill="none" stroke-width="20"/>
+              <circle cx="92" cy="80" r="17"/>
+              <circle cx="168" cy="80" r="17"/>
+              <text x="130" y="214" text-anchor="middle" class="logo-text">micro:bit</text>
+            </g>
+            <mask id="mShape" maskUnits="userSpaceOnUse" x="-20" y="-20" width="300" height="280">
+              <use href="#shapeAll" fill="#fff" stroke="#fff"/>
+            </mask>
+          </defs>
+
+          <!-- Versión azul metálica (arranque) -->
+          <g id="lgBlue">
+            <use href="#shapeAll" transform="translate(0 7)" fill="url(#gBlueSide)" stroke="url(#gBlueSide)"/>
+            <use href="#shapeAll" fill="url(#gBlueFace)" stroke="url(#gBlueFace)"/>
+          </g>
+          <!-- Versión verde micro:bit (modo programación) -->
+          <g id="lgGreen" opacity="0">
+            <use href="#shapeAll" transform="translate(0 7)" fill="url(#gGreenSide)" stroke="url(#gGreenSide)"/>
+            <use href="#shapeAll" fill="url(#gGreenFace)" stroke="url(#gGreenFace)"/>
+            <g id="eyesLed" opacity="0">
+              <circle cx="92" cy="80" r="17" fill="url(#gEye)"/>
+              <circle cx="168" cy="80" r="17" fill="url(#gEye)"/>
+            </g>
+          </g>
+          <!-- Brillo especular superior (el "canto" iluminado) -->
+          <path d="M66 14H194A52 52 0 0 1 246 66V94A52 52 0 0 1 194 146H66A52 52 0 0 1 14 94V66A52 52 0 0 1 66 14Z" transform="translate(0 -6)" fill="none" stroke="url(#gSpec)" stroke-width="3" opacity=".75" mask="url(#mShape)"/>
+          <ellipse cx="86" cy="73" rx="5.5" ry="3.6" fill="#fff" opacity=".55"/>
+          <ellipse cx="162" cy="73" rx="5.5" ry="3.6" fill="#fff" opacity=".55"/>
+          <!-- Reflejo que barre el logo (solo visible sobre la forma gracias a la máscara) -->
+          <g mask="url(#mShape)">
+            <rect id="sheen" x="0" y="-30" width="64" height="300" fill="url(#gSheen)" opacity=".75" transform="translate(-200 0) skewX(-20)"/>
+          </g>
+          <!-- Flujo de datos verde recorriendo el contorno -->
+          <g id="streams" opacity="0" fill="none" stroke-linecap="round">
+            <path data-s="0" d="M66 14H194A52 52 0 0 1 246 66V94A52 52 0 0 1 194 146H66A52 52 0 0 1 14 94V66A52 52 0 0 1 66 14Z" pathLength="1000" stroke="#3dff8f" stroke-width="14" stroke-opacity=".28" stroke-dasharray="90 910"/>
+            <path data-s="0" d="M66 14H194A52 52 0 0 1 246 66V94A52 52 0 0 1 194 146H66A52 52 0 0 1 14 94V66A52 52 0 0 1 66 14Z" pathLength="1000" stroke="#e4fff0" stroke-width="5" stroke-dasharray="70 930"/>
+            <path data-s="1" d="M66 14H194A52 52 0 0 1 246 66V94A52 52 0 0 1 194 146H66A52 52 0 0 1 14 94V66A52 52 0 0 1 66 14Z" pathLength="1000" stroke="#3dff8f" stroke-width="14" stroke-opacity=".28" stroke-dasharray="60 940"/>
+            <path data-s="1" d="M66 14H194A52 52 0 0 1 246 66V94A52 52 0 0 1 194 146H66A52 52 0 0 1 14 94V66A52 52 0 0 1 66 14Z" pathLength="1000" stroke="#e4fff0" stroke-width="5" stroke-dasharray="45 955"/>
+            <path data-s="2" d="M66 14H194A52 52 0 0 1 246 66V94A52 52 0 0 1 194 146H66A52 52 0 0 1 14 94V66A52 52 0 0 1 66 14Z" pathLength="1000" stroke="#3dff8f" stroke-width="14" stroke-opacity=".28" stroke-dasharray="40 960"/>
+            <path data-s="2" d="M66 14H194A52 52 0 0 1 246 66V94A52 52 0 0 1 194 146H66A52 52 0 0 1 14 94V66A52 52 0 0 1 66 14Z" pathLength="1000" stroke="#e4fff0" stroke-width="5" stroke-dasharray="30 970"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- "Se está programando la app" -->
+    <div class="code-panel" id="codePanel" aria-hidden="true">
+      <div class="code-head"><i></i><i></i><i></i><span>main.ts · micro:bit</span></div>
+      <div class="code-lines" id="codeLines"></div>
+      <div class="progress"><i id="progBar"></i></div>
+      <div class="progress-meta"><span id="progTxt">Programando micro:bit</span><b id="progPct">0%</b></div>
+    </div>
+  </div>
+  <div class="intro-flash" id="introFlash"></div>
+  <canvas id="fx"></canvas>
+  <div class="intro-skip" id="introSkip">Toca para saltar</div>
+</div>
+
+<!-- =====================================================================
+     APP DE CONTROL
+     ===================================================================== -->
+<main class="app" id="app">
+  <header class="topbar card reveal" style="--i:0">
+    <div class="brand">
+      <span class="brand-mark"><svg viewBox="0 0 260 160" aria-hidden="true"><use href="#i-face"/></svg></span>
+      <div class="brand-text">
+        <b>Seguridad Vial <small>· micro:bit</small></b>
+        <div class="status" id="status" data-state="disconnected" role="status" aria-live="polite">
+          <span class="status-ic"><svg class="ic"><use id="statusIcon" href="#i-bt-off"/></svg></span>
+          <span id="statusText">Desconectado</span>
+        </div>
+      </div>
+    </div>
+    <button class="icon-btn" id="settingsBtn" aria-label="Ajustes"><svg class="ic"><use href="#i-sliders"/></svg></button>
+  </header>
+
+  <div class="notice card reveal" id="notice" style="--i:1" hidden role="alert">
+    <span class="notice-ic"><svg class="ic"><use href="#i-alert"/></svg></span>
+    <div><b id="noticeTitle"></b><p id="noticeText"></p></div>
+  </div>
+
+  <section class="card connect-card reveal" style="--i:1">
+    <button class="connect-btn" id="connectBtn" data-state="disconnected">
+      <span class="cb-orb">
+        <span class="radar"><i class="radar-sweep"></i><i class="radar-wave"></i><i class="radar-wave w2"></i></span>
+        <span class="cb-flash" id="cbFlash"></span>
+        <svg class="ic"><use id="connectIcon" href="#i-bt"/></svg>
+      </span>
+      <span class="cb-text"><b id="connectLabel">Conectar coche</b><small id="connectSub">Toca para buscar tu micro:bit</small></span>
+      <svg class="ic cb-go"><use href="#i-right"/></svg>
+    </button>
+  </section>
+
+  <section class="pad-card reveal" style="--i:2" aria-label="Control de movimiento">
+    <div class="pad" id="pad" data-moving="0">
+      <div class="pad-trail"></div>
+      <button class="dbtn up" data-cmd="avanzar" aria-label="Avanzar"><span class="face"><svg class="ic"><use href="#i-up"/></svg><small>Avanzar</small></span></button>
+      <button class="dbtn left" data-cmd="izquierda" aria-label="Izquierda"><span class="face"><svg class="ic"><use href="#i-left"/></svg><small>Izq.</small></span></button>
+      <button class="stop-btn" id="stopBtn" aria-label="Parar"><span class="stop-ring" id="stopRing"></span><span class="stop-face"><svg class="ic"><use href="#i-stop"/></svg><b>PARAR</b></span></button>
+      <button class="dbtn right" data-cmd="derecha" aria-label="Derecha"><span class="face"><svg class="ic"><use href="#i-right"/></svg><small>Der.</small></span></button>
+      <button class="dbtn down" data-cmd="atras" aria-label="Atrás"><span class="face"><svg class="ic"><use href="#i-down"/></svg><small>Atrás</small></span></button>
+    </div>
+  </section>
+
+  <section class="card speed-card reveal" id="speedCard" style="--i:3">
+    <div class="gauge" aria-hidden="true">
+      <svg viewBox="0 0 100 100">
+        <path class="g-track" d="M21.716 78.284A40 40 0 1 1 78.284 78.284"/>
+        <path class="g-val" id="gVal" pathLength="100" d="M21.716 78.284A40 40 0 1 1 78.284 78.284"/>
+      </svg>
+      <div class="gauge-read"><b id="speedNum">60</b><small>VEL</small></div>
+    </div>
+    <div class="speed-ctl">
+      <div class="speed-head"><span>Velocidad</span><span class="speed-tag" id="speedTag">NORMAL</span></div>
+      <input class="range" id="speed" type="range" min="0" max="100" step="1" value="60" aria-label="Velocidad de 0 a 100">
+      <div class="speed-scale"><span>0</span><span>50</span><span>100</span></div>
+    </div>
+  </section>
+
+  <section class="extras reveal" id="extras" style="--i:4" aria-label="Extras">
+    <button class="xbtn card horn" id="hornBtn">
+      <span class="x-icon"><span class="x-wave"></span><span class="x-wave"></span><svg class="ic"><use href="#i-horn"/></svg></span>
+      <span class="x-label">Bocina</span><span class="x-state">TOCAR</span>
+    </button>
+    <button class="xbtn card lights" id="lightsBtn" aria-pressed="false">
+      <span class="x-icon"><svg class="ic"><use href="#i-lights"/></svg></span>
+      <span class="x-label">Luces</span><span class="x-state">OFF</span>
+    </button>
+    <button class="xbtn card safety" id="safetyBtn" aria-pressed="false">
+      <span class="x-icon"><svg class="ic"><use href="#i-shield"/></svg></span>
+      <span class="x-label">Seguridad</span><span class="x-state">OFF</span>
+    </button>
+  </section>
+
+  <footer class="telemetry reveal" style="--i:5">
+    <span>Enviado</span><code id="lastCmd" data-state="idle">—</code>
+    <span class="sep"></span>
+    <span>Recibido</span><code id="lastRx" data-state="idle">—</code>
+  </footer>
+</main>
+
+<!-- Avisos -->
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<!-- Diálogo de bienvenida / ajustes -->
+<div class="modal" id="modal" hidden>
+  <div class="modal-scrim" id="modalScrim"></div>
+  <div class="sheet card" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-hero"><span class="brand-mark"><svg viewBox="0 0 260 160" aria-hidden="true"><use href="#i-face"/></svg></span></div>
+    <h2 id="sheetTitle">¿Quieres una guía rápida?</h2>
+    <p id="sheetText">Te enseño en medio minuto para qué sirve cada control.</p>
+    <div class="prefs">
+      <div class="pref-row">
+        <span>Tema</span>
+        <div class="seg" id="themeSeg" role="radiogroup" aria-label="Tema" data-v="dark">
+          <i class="seg-thumb"></i>
+          <button role="radio" data-v="dark" aria-checked="true"><svg class="ic"><use href="#i-moon"/></svg>Oscuro</button>
+          <button role="radio" data-v="light" aria-checked="false"><svg class="ic"><use href="#i-sun"/></svg>Claro</button>
+        </div>
+      </div>
+      <div class="pref-row">
+        <span>Color</span>
+        <div class="swatches" id="accentSw" role="radiogroup" aria-label="Color de acento">
+          <button role="radio" data-v="green" style="--sw: 52 226 122" aria-label="Verde micro:bit"></button>
+          <button role="radio" data-v="cyan" style="--sw: 34 211 238" aria-label="Cian"></button>
+          <button role="radio" data-v="violet" style="--sw: 167 139 250" aria-label="Violeta"></button>
+        </div>
+      </div>
+      <div class="pref-row">
+        <span>Vibración</span>
+        <button class="switch" id="hapticsSw" role="switch" aria-checked="true" aria-label="Vibración al pulsar"><i></i></button>
+      </div>
+    </div>
+    <div class="sheet-actions" id="sheetActions"></div>
+  </div>
+</div>
+
+<!-- Guía -->
+<div class="tour" id="tour" hidden>
+  <div class="tour-hole" id="tourHole"></div>
+  <div class="tour-card card" id="tourCard" role="dialog" aria-live="polite">
+    <div class="tour-inner">
+      <div class="tour-step" id="tourStep">Paso 1 de 7</div>
+      <h3 id="tourTitle"></h3>
+      <p id="tourText"></p>
+    </div>
+    <div class="tour-foot">
+      <div class="tour-dots" id="tourDots"></div>
+      <button class="btn ghost" id="tourSkip">Saltar</button>
+      <button class="btn primary" id="tourNext">Siguiente</button>
+    </div>
+  </div>
+</div>
+
+<noscript><p style="position:fixed;inset:auto 0 0 0;padding:16px;text-align:center;background:#000;color:#fff;z-index:200">Esta app necesita JavaScript activado.</p></noscript>
+
+<script>
+'use strict';
+/* =======================================================================
+   SEGURIDAD VIAL CON MICRO:BIT — App controladora (Web Bluetooth)
+   Estructura:
+     1. Configuración y utilidades
+     2. Preferencias (tema, color, vibración)
+     3. Vibración háptica
+     4. Avisos (toasts)
+     5. Fondo con parallax
+     6. Bluetooth: clase MicrobitUART  ← el corazón de la app
+     7. Intro animada
+     8. Diálogo de bienvenida / ajustes
+     9. Guía paso a paso
+    10. Controles del coche
+    11. Arranque
+   ======================================================================= */
+
+/* ========== 1. CONFIGURACIÓN Y UTILIDADES ========== */
+
+// UUIDs del servicio UART (Nordic UART Service) que usa el micro:bit.
+const UART = {
+  SERVICE: '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
+  CHAR_02: '6e400002-b5a3-f393-e0a9-e50e24dcca9e',
+  CHAR_03: '6e400003-b5a3-f393-e0a9-e50e24dcca9e',
+};
+// Nombre con el que se anuncia el micro:bit: "BBC micro:bit [xxxxx]"
+const NAME_PREFIX = 'BBC micro:bit';
+
+// Comandos EXACTOS que espera el micro:bit (minúsculas, sin acentos).
+const MOVE_CMDS = new Set(['avanzar', 'atras', 'izquierda', 'derecha', 'parar']);
+
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const seg = (t, a, b) => clamp((t - a) / (b - a), 0, 1);           // progreso 0..1 de un tramo de tiempo
+const easeOut = p => 1 - Math.pow(1 - p, 3);
+const easeIn = p => p * p * p;
+const easeInOut = p => (p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const rootEl = document.documentElement;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const lowEnd = (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 3;
+const EASE = 'cubic-bezier(.22, 1, .36, 1)';
+
+// Rechaza una promesa si tarda demasiado (para que la app nunca se quede colgada).
+function withTimeout(promise, ms) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(Object.assign(new Error('timeout'), { name: 'TimeoutError' })), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+/* ========== 2. PREFERENCIAS ========== */
+const Prefs = {
+  KEY: 'sv-prefs-v1',
+  data: { theme: 'dark', accent: 'green', haptics: true },
+  load() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(this.KEY) || '{}');
+      if (saved.theme === 'light' || saved.theme === 'dark') this.data.theme = saved.theme;
+      if (['green', 'cyan', 'violet'].includes(saved.accent)) this.data.accent = saved.accent;
+      if (typeof saved.haptics === 'boolean') this.data.haptics = saved.haptics;
+    } catch (e) { /* almacenamiento bloqueado: valores por defecto */ }
+    return this;
+  },
+  save() { try { localStorage.setItem(this.KEY, JSON.stringify(this.data)); } catch (e) { /* sin persistencia */ } },
+  apply() {
+    rootEl.dataset.theme = this.data.theme;
+    rootEl.dataset.accent = this.data.accent;
+    const meta = $('meta[name="theme-color"]');
+    if (meta) meta.content = this.data.theme === 'light' ? '#edf1f6' : '#060a11';
+  },
+  set(key, value) {
+    if (this.data[key] === value) return;
+    this.data[key] = value;
+    this.save();
+    // Si el navegador lo permite, fundido suave de toda la página al cambiar de tema/color.
+    if (document.startViewTransition && !reduceMotion && key !== 'haptics') {
+      try { document.startViewTransition(() => this.apply()); return; } catch (e) { /* sigue abajo */ }
+    }
+    this.apply();
+  },
+};
+
+/* ========== 3. VIBRACIÓN HÁPTICA ========== */
+const Haptics = {
+  pulse(pattern) {
+    if (!Prefs.data.haptics || !navigator.vibrate) return;
+    try { navigator.vibrate(pattern); } catch (e) { /* no disponible */ }
+  },
+};
+
+/* ========== 4. AVISOS (toasts) — nunca alert() ========== */
+const Toast = (() => {
+  const box = $('#toasts');
+  const ICON = { info: 'i-info', ok: 'i-check', warn: 'i-alert', error: 'i-alert' };
+  function show({ type = 'info', title, text = '', action = null, duration } = {}) {
+    const el = document.createElement('div');
+    el.className = `toast t-${type}`;
+    el.setAttribute('role', type === 'error' ? 'alert' : 'status');
+    el.innerHTML = `<span class="toast-ic"><svg class="ic"><use href="#${ICON[type] || 'i-info'}"/></svg></span><div class="toast-body"><b></b><span></span></div>`;
+    el.querySelector('b').textContent = title;
+    el.querySelector('.toast-body span').textContent = text;
+    if (!text) el.querySelector('.toast-body span').remove();
+    let timer;
+    const close = () => {
+      clearTimeout(timer);
+      if (el.classList.contains('out')) return;
+      el.classList.add('out');
+      setTimeout(() => el.remove(), 450);
+    };
+    if (action) {
+      const b = document.createElement('button');
+      b.className = 'toast-act';
+      b.textContent = action.label;
+      b.addEventListener('click', e => { e.stopPropagation(); close(); action.run(); });
+      el.append(b);
+    }
+    el.addEventListener('click', close);
+    // Como mucho 2 avisos a la vez: elegante, no saturado.
+    const live = $$('.toast:not(.out)', box);
+    if (live.length >= 2) { live[0].classList.add('out'); setTimeout(() => live[0].remove(), 450); }
+    box.append(el);
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('in')));
+    timer = setTimeout(close, duration ?? (type === 'error' ? 6500 : action ? 6000 : 3400));
+    return { close };
+  }
+  return { show };
+})();
+
+/* ========== 5. FONDO CON PARALLAX (giroscopio o dedo) ========== */
+const Parallax = (() => {
+  const grid = $('.bg-grid'), depth = $('.bg-depth');
+  const s = { x: 0, y: 0, tx: 0, ty: 0, running: false, base: null };
+  function step() {
+    // Interpolación suave (lerp) hacia el objetivo: movimiento fluido y sin tirones.
+    s.x += (s.tx - s.x) * .07;
+    s.y += (s.ty - s.y) * .07;
+    grid.style.transform = `translate3d(${(-s.x * 10).toFixed(2)}px, ${(-s.y * 10).toFixed(2)}px, 0)`;
+    depth.style.transform = `translate3d(${(-s.x * 26).toFixed(2)}px, ${(-s.y * 26).toFixed(2)}px, 0)`;
+    // El bucle se detiene solo cuando llega al destino (ahorra batería).
+    if (Math.abs(s.tx - s.x) + Math.abs(s.ty - s.y) > .002) requestAnimationFrame(step);
+    else s.running = false;
+  }
+  function target(nx, ny) {
+    s.tx = clamp(nx, -1, 1);
+    s.ty = clamp(ny, -1, 1);
+    if (!s.running) { s.running = true; requestAnimationFrame(step); }
+  }
+  function init() {
+    if (reduceMotion) return;
+    addEventListener('pointermove', e => target(e.clientX / innerWidth * 2 - 1, e.clientY / innerHeight * 2 - 1), { passive: true });
+    if (!lowEnd && 'DeviceOrientationEvent' in window) {
+      addEventListener('deviceorientation', e => {
+        if (e.gamma == null || e.beta == null) return;
+        if (!s.base) s.base = { b: e.beta, g: e.gamma };
+        // La posición "neutra" se adapta poco a poco a cómo sujetas el móvil.
+        s.base.b += (e.beta - s.base.b) * .004;
+        s.base.g += (e.gamma - s.base.g) * .004;
+        const nx = (e.gamma - s.base.g) / 22, ny = (e.beta - s.base.b) / 22;
+        if (Math.abs(nx - s.tx) + Math.abs(ny - s.ty) < .02) return;   // ignora el temblor
+        target(nx, ny);
+      }, { passive: true });
+    }
+  }
+  return { init, get x() { return s.x; }, get y() { return s.y; } };
+})();
+
+/* =======================================================================
+   6. BLUETOOTH — clase MicrobitUART
+   -----------------------------------------------------------------------
+   ¿Cómo hablamos con el micro:bit?
+   - El micro:bit ofrece el servicio "UART" (como un cable serie, pero por
+     Bluetooth Low Energy). Tiene dos "características" (canales):
+       · una para ESCRIBIR (móvil → micro:bit)
+       · otra para RECIBIR avisos (micro:bit → móvil)
+   - ¡OJO! En el micro:bit los nombres van al revés que en el estándar de Nordic:
+       6e400002 = TX del micro:bit (indicate → nos llega a nosotros)
+       6e400003 = RX del micro:bit (write   → aquí escribimos)
+     Para que funcione siempre, NO lo damos por supuesto: pedimos las dos y
+     elegimos según sus propiedades (la que admite "write" es la de envío).
+   - Cada comando se manda como texto UTF-8 terminado en "\n", porque el
+     micro:bit lee hasta el salto de línea.
+   - Los envíos van en una COLA (uno detrás de otro): el Bluetooth no admite
+     dos escrituras a la vez ("GATT operation already in progress").
+   ======================================================================= */
+class MicrobitUART {
+  constructor(handlers = {}) {
+    this.h = handlers;              // onStatus(estado, info), onSent(cmd), onReceive(texto), onSendError(cmd, e)
+    this.device = null;
+    this.writeChar = null;          // característica donde escribimos
+    this.notifyChar = null;         // característica de la que recibimos
+    this.state = 'disconnected';    // 'disconnected' | 'connecting' | 'connected'
+    this.queue = [];
+    this.pumping = null;
+    this.userClosing = false;
+    this.busyOpening = false;
+    this.encoder = new TextEncoder();
+    this.decoder = new TextDecoder();
+    this.rxBuffer = '';
+    this._onDisc = this._onDisconnected.bind(this);
+    this._onData = this._onNotify.bind(this);
+  }
+
+  get connected() { return this.state === 'connected' && !!(this.device && this.device.gatt && this.device.gatt.connected); }
+
+  _set(state, info = {}) {
+    this.state = state;
+    try { this.h.onStatus && this.h.onStatus(state, { name: this.device && this.device.name, ...info }); }
+    catch (e) { console.error(e); }
+  }
+
+  /* --- Conectar: abre el selector de dispositivos del navegador --- */
+  async connect() {
+    if (this.state !== 'disconnected') return;
+    this.userClosing = false;
+    this._set('connecting', { phase: 'search' });
+    let device;
+    try {
+      // Filtramos por el prefijo del nombre y pedimos permiso para el servicio UART.
+      device = await navigator.bluetooth.requestDevice({
+        filters: [{ namePrefix: NAME_PREFIX }],
+        optionalServices: [UART.SERVICE],
+      });
+    } catch (e) {
+      this._set('disconnected', { reason: 'error' });
+      throw e;
+    }
+    if (this.device && this.device !== device) this.device.removeEventListener('gattserverdisconnected', this._onDisc);
+    this.device = device;
+    device.removeEventListener('gattserverdisconnected', this._onDisc);
+    device.addEventListener('gattserverdisconnected', this._onDisc);
+    await this._open();
+  }
+
+  /* --- Reconectar al mismo micro:bit sin volver a abrir el selector --- */
+  async reconnect() {
+    if (!this.device) return this.connect();
+    if (this.state !== 'disconnected') return;
+    this.userClosing = false;
+    await this._open();
+  }
+
+  async _open() {
+    this._set('connecting', { phase: 'gatt' });
+    this.busyOpening = true;
+    try {
+      await this._setupGatt();
+      this.busyOpening = false;
+      this._set('connected');
+    } catch (e) {
+      this.busyOpening = false;
+      try { if (this.device && this.device.gatt.connected) this.device.gatt.disconnect(); } catch (_) { /* nada */ }
+      this._cleanup();
+      this._set('disconnected', { reason: 'error' });
+      throw e;
+    }
+  }
+
+  async _setupGatt() {
+    // 1) Conectar con el servidor GATT del micro:bit (máx. 12 s).
+    const server = await withTimeout(this.device.gatt.connect(), 12000);
+    if (this.userClosing) throw Object.assign(new Error('cancelado'), { name: 'AbortError' });
+
+    // 2) Obtener el servicio UART. Algunos Android tardan en "descubrir" servicios: 1 reintento.
+    let service;
+    for (let i = 0; i < 2; i++) {
+      try { service = await server.getPrimaryService(UART.SERVICE); break; }
+      catch (e) { if (i === 1 || !this.device.gatt.connected) throw e; await sleep(500); }
+    }
+
+    // 3) Pedir las dos características y elegir cada una por sus PROPIEDADES.
+    const chars = [];
+    for (const uuid of [UART.CHAR_02, UART.CHAR_03]) {
+      try { chars.push(await service.getCharacteristic(uuid)); } catch (e) { /* puede no existir */ }
+    }
+    const canWrite = c => c.properties.write || c.properties.writeWithoutResponse;
+    const canNotify = c => c.properties.notify || c.properties.indicate;
+    this.writeChar = chars.find(c => canWrite(c) && !canNotify(c)) || chars.find(canWrite) || null;
+    this.notifyChar = chars.find(c => c !== this.writeChar && canNotify(c)) || null;
+    if (!this.writeChar) throw Object.assign(new Error('El servicio UART no tiene canal de escritura'), { name: 'NoUartWrite' });
+    console.info('[BLE] Escribiendo en', this.writeChar.uuid, '| Recibiendo de', this.notifyChar ? this.notifyChar.uuid : '(ninguna)');
+
+    // 4) Activar la recepción de mensajes del micro:bit (opcional: si falla, seguimos).
+    if (this.notifyChar) {
+      try {
+        await this.notifyChar.startNotifications();
+        this.notifyChar.addEventListener('characteristicvaluechanged', this._onData);
+      } catch (e) {
+        console.warn('[BLE] Sin notificaciones del micro:bit:', e);
+        this.notifyChar = null;
+      }
+    }
+  }
+
+  /* --- Desconexión pedida por el usuario: primero "parar", por seguridad --- */
+  async disconnect() {
+    this.userClosing = true;
+    if (this.connected) {
+      this.queue = [];
+      this.send('parar');
+      try { await withTimeout(this.pumping || Promise.resolve(), 900); } catch (e) { /* da igual */ }
+    }
+    try { if (this.device && this.device.gatt.connected) this.device.gatt.disconnect(); } catch (e) { /* nada */ }
+    this._cleanup();
+    if (this.state !== 'disconnected') this._set('disconnected', { reason: 'user' });
+  }
+
+  /* --- El micro:bit se ha desconectado (lejos, sin batería, reinicio...) --- */
+  _onDisconnected() {
+    if (this.busyOpening) return;                       // lo gestiona _open()
+    const wasConnected = this.state === 'connected';
+    this._cleanup();
+    if (this.userClosing || !wasConnected) {
+      if (this.state !== 'disconnected') this._set('disconnected', { reason: 'user' });
+      return;
+    }
+    this._autoReconnect();
+  }
+
+  // Hasta 2 reintentos automáticos antes de rendirse.
+  async _autoReconnect() {
+    const delays = [600, 1600];
+    for (let i = 0; i < delays.length && !this.userClosing; i++) {
+      this._set('connecting', { phase: 'reconnect', attempt: i + 1 });
+      await sleep(delays[i]);
+      if (this.userClosing) break;                        // el usuario canceló
+      this.busyOpening = true;
+      try {
+        await this._setupGatt();
+        this.busyOpening = false;
+        if (this.userClosing) { try { this.device.gatt.disconnect(); } catch (e) { /* nada */ } break; }
+        this._set('connected', { reconnected: true });
+        return;
+      } catch (e) {
+        this.busyOpening = false;
+        try { if (this.device.gatt.connected) this.device.gatt.disconnect(); } catch (_) { /* nada */ }
+        this._cleanup();
+      }
+    }
+    if (this.state !== 'disconnected') this._set('disconnected', { reason: this.userClosing ? 'user' : 'lost' });
+  }
+
+  _cleanup() {
+    if (this.notifyChar) {
+      try { this.notifyChar.removeEventListener('characteristicvaluechanged', this._onData); } catch (e) { /* nada */ }
+    }
+    this.writeChar = null;
+    this.notifyChar = null;
+    this.queue = [];
+    this.rxBuffer = '';
+  }
+
+  /* --- Enviar un comando (se encola). Devuelve false si no hay conexión. ---
+     Para que el coche responda al instante aunque pulses muy rápido:
+       · si hay varios "velXX" pendientes, solo se manda el último;
+       · si hay varios movimientos pendientes, solo el último (así "parar" siempre llega);
+       · bocina/luces/seguridad nunca se descartan. */
+  send(cmd) {
+    if (!this.connected) return false;
+    const kind = cmd.startsWith('vel') ? 'vel' : MOVE_CMDS.has(cmd) ? 'move' : 'extra';
+    if (kind !== 'extra') this.queue = this.queue.filter(q => q.kind !== kind);
+    this.queue.push({ cmd, kind });
+    this._kick();
+    return true;
+  }
+
+  _kick() {
+    if (this.pumping) return;
+    this.pumping = this._pump().finally(() => {
+      this.pumping = null;
+      if (this.queue.length && this.connected) this._kick();
+    });
+  }
+
+  async _pump() {
+    while (this.queue.length) {
+      if (!this.connected) { this.queue = []; break; }
+      const { cmd } = this.queue.shift();
+      try {
+        await this._writeLine(cmd);
+        this.h.onSent && this.h.onSent(cmd);
+      } catch (e) {
+        // Un reintento rápido por si el canal estaba ocupado un instante.
+        let ok = false;
+        if (this.connected) {
+          try { await sleep(40); await this._writeLine(cmd); ok = true; this.h.onSent && this.h.onSent(cmd); } catch (e2) { /* falla de nuevo */ }
+        }
+        if (!ok) { console.warn('[BLE] No se pudo enviar', cmd, e); this.h.onSendError && this.h.onSendError(cmd, e); }
+      }
+    }
+  }
+
+  // Escribe "texto\n" en UTF-8, en trozos de 20 bytes (límite clásico de BLE).
+  async _writeLine(text) {
+    const c = this.writeChar;
+    if (!c) throw new Error('Sin canal de escritura');
+    const data = this.encoder.encode(text + '\n');
+    for (let i = 0; i < data.length; i += 20) {
+      const chunk = data.slice(i, i + 20);
+      if (c.properties.write && c.writeValueWithResponse) await c.writeValueWithResponse(chunk);
+      else if (c.properties.writeWithoutResponse && c.writeValueWithoutResponse) await c.writeValueWithoutResponse(chunk);
+      else await c.writeValue(chunk);
+    }
+  }
+
+  // Mensajes del micro:bit → los juntamos por líneas.
+  _onNotify(ev) {
+    const v = ev.target.value;
+    this.rxBuffer += this.decoder.decode(new Uint8Array(v.buffer, v.byteOffset, v.byteLength), { stream: true });
+    let idx;
+    while ((idx = this.rxBuffer.search(/[\r\n]/)) >= 0) {
+      const line = this.rxBuffer.slice(0, idx).trim();
+      this.rxBuffer = this.rxBuffer.slice(idx + 1);
+      if (line && this.h.onReceive) this.h.onReceive(line);
+    }
+    clearTimeout(this.rxTimer);
+    if (this.rxBuffer) {
+      this.rxTimer = setTimeout(() => {
+        const line = this.rxBuffer.trim();
+        this.rxBuffer = '';
+        if (line && this.h.onReceive) this.h.onReceive(line);
+      }, 250);
+    }
+  }
+}
+
+// Traduce los errores técnicos de Web Bluetooth a mensajes claros.
+function explainBleError(e) {
+  const name = (e && e.name) || '';
+  const msg = String((e && e.message) || '');
+  if (name === 'NotFoundError' && /cancel/i.test(msg)) return { type: 'info', title: 'Búsqueda cancelada', text: 'Cuando quieras, vuelve a pulsar Conectar.' };
+  if (name === 'NotFoundError' && /(adapter|not available|unavailable|turned off)/i.test(msg)) return { type: 'warn', title: 'Bluetooth apagado', text: 'Activa el Bluetooth (y la ubicación en Android) y vuelve a intentarlo.' };
+  if (name === 'NotFoundError' || name === 'NoUartWrite') return { type: 'error', title: 'Servicio UART no encontrado', text: 'Revisa en MakeCode que el programa inicie el servicio UART por Bluetooth y vuelve a descargarlo al micro:bit.' };
+  if (name === 'SecurityError') return { type: 'error', title: 'Conexión no permitida', text: 'Web Bluetooth necesita HTTPS (o localhost) y que pulses tú el botón.' };
+  if (name === 'NotAllowedError') return { type: 'warn', title: 'Permiso denegado', text: 'Permite a Chrome usar Bluetooth / dispositivos cercanos en los ajustes del móvil.' };
+  if (name === 'AbortError') return null;
+  if (name === 'TimeoutError') return { type: 'error', title: 'El coche no responde', text: 'Acerca el móvil, comprueba la batería del micro:bit y reinícialo.' };
+  if (name === 'NetworkError') return { type: 'error', title: 'No se pudo conectar', text: 'Fallo de Bluetooth. Reinicia el micro:bit, acércate y vuelve a intentarlo.' };
+  return { type: 'error', title: 'Algo falló al conectar', text: msg || 'Inténtalo de nuevo.' };
+}
+
+// ¿Puede este navegador usar Web Bluetooth?
+const Support = {
+  check() {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (!window.isSecureContext) {
+      return { ok: false, title: 'Abre la app por HTTPS', text: 'Web Bluetooth solo funciona en páginas https:// o en localhost. Usa GitHub Pages o un servidor local (mira el README).' };
+    }
+    if (!('bluetooth' in navigator)) {
+      return {
+        ok: false,
+        title: 'Este navegador no puede usar Bluetooth',
+        text: isIOS
+          ? 'En iPhone/iPad, Safari no lo permite. Instala la app gratuita «Bluefy» y abre esta página desde ella. Puedes explorar la interfaz igualmente.'
+          : 'Usa Google Chrome o Microsoft Edge (Android, Windows, macOS o ChromeOS). Puedes explorar la interfaz igualmente.',
+      };
+    }
+    return { ok: true };
+  },
+};
+
+/* =======================================================================
+   7. INTRO ANIMADA (~5 s)
+   Una sola "línea de tiempo maestra": en cada frame calculamos el tiempo t
+   y, a partir de él, la posición de cada elemento. Así todo va sincronizado,
+   se puede saltar en cualquier momento y solo usamos transform/opacity
+   (lo más barato para el móvil) + un canvas para las partículas.
+   ======================================================================= */
+const Intro = (() => {
+  const root = $('#intro'), cv = $('#fx'), ctx = cv.getContext('2d');
+  const logo = $('#logo3d'), lgBlue = $('#lgBlue'), lgGreen = $('#lgGreen'), eyes = $('#eyesLed');
+  const sheen = $('#sheen'), streamsG = $('#streams'), streams = $$('#streams path');
+  const glowB = $('#glowBlue'), glowG = $('#glowGreen'), floorB = $('#floorBlue'), floorG = $('#floorGreen');
+  const panel = $('#codePanel'), codeEl = $('#codeLines'), bar = $('#progBar'), progTxt = $('#progTxt'), progPct = $('#progPct');
+  const flash = $('#introFlash'), skipHint = $('#introSkip');
+
+  // Guion de tiempos (segundos)
+  const T = { IN0: .25, IN1: 1.45, G0: 1.9, G1: 2.9, P0: 2.2, P1: 2.65, TY0: 2.45, TY1: 3.85, PR1: 4.0, OUT0: 4.0, OUT1: 4.3, BOOM: 4.4, REVEAL: 4.46, F0: 4.62, F1: 5.2, END: 5.25 };
+  const SWEEPS = [[1.0, 1.75], [2.75, 3.45], [3.75, 4.3]];
+
+  // Código que "se escribe solo" (clase de color, texto)
+  const CODE = [
+    [['f', 'bluetooth'], ['o', '.'], ['f', 'startUartService'], ['o', '()']],
+    [['k', 'onUart'], ['o', '('], ['s', '"\\n"'], ['o', ', cmd => {']],
+    [['o', '  '], ['k', 'if'], ['o', ' (cmd == '], ['s', '"avanzar"'], ['o', ') '], ['f', 'motores'], ['o', '(v, v)']],
+    [['o', '  '], ['k', 'if'], ['o', ' ('], ['f', 'sensor'], ['o', '.cm() < '], ['n', '10'], ['o', ') '], ['f', 'parar'], ['o', '()']],
+    [['o', '})']],
+  ];
+  const CODE_LEN = CODE.reduce((n, line) => n + line.reduce((m, [, s]) => m + s.length, 0) + 1, 0);
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  let W = 0, H = 0, DPR = 1, start = 0, last = 0, t = 0, raf = 0;
+  let boomed = false, revealed = false, finished = false, lastChars = -1, lastPct = -1, sheenOff = false;
+  let onReveal = () => {}, resolveDone = () => {};
+  const sparks = [], glows = [], bits = [];
+  let rings = [];
+  let sprites = null;
+
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);   // limitar resolución = más fluidez
+    W = innerWidth; H = innerHeight;
+    cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+
+  // Pequeñas "bolitas de luz" pre-dibujadas (dibujar una imagen es más barato que un degradado cada frame)
+  function makeSprite(rgb) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g = c.getContext('2d');
+    const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grd.addColorStop(0, 'rgba(255,255,255,1)');
+    grd.addColorStop(.22, `rgba(${rgb},.9)`);
+    grd.addColorStop(1, `rgba(${rgb},0)`);
+    g.fillStyle = grd;
+    g.fillRect(0, 0, 64, 64);
+    return c;
+  }
+
+  function renderCode(n) {
+    if (n === lastChars) return;
+    lastChars = n;
+    let left = n, html = '';
+    for (const line of CODE) {
+      if (left <= 0) break;
+      let lineHtml = '', cut = false;
+      for (const [cls, txt] of line) {
+        if (left <= 0) { cut = true; break; }
+        const part = txt.slice(0, left);
+        left -= part.length;
+        lineHtml += `<span class="${cls}">${esc(part)}</span>`;
+        if (part.length < txt.length) { cut = true; break; }
+      }
+      const isLast = left <= 0 || cut;
+      left -= 1;                                     // el salto de línea cuenta como carácter
+      html += `<span class="ln">${lineHtml}${isLast ? '<i class="caret"></i>' : ''}</span>`;
+      if (isLast) break;
+    }
+    codeEl.innerHTML = html;
+  }
+
+  function logoCenter() {
+    const r = logo.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height * .34, w: r.width, h: r.height };
+  }
+
+  // EXPLOSIÓN: crea las partículas de una vez (pool) — luego solo se actualizan.
+  function boom() {
+    boomed = true;
+    const c = logoCenter();
+    const S = clamp(Math.min(W, H) / 420, .7, 1.8);
+    let n = Math.round(clamp(W * H / 2600, 150, 260));
+    if (lowEnd) n = Math.round(n * .65);
+    const palette = ['#34e27a', '#34e27a', '#5dff9d', '#a6ffca', '#e6fff0', '#5ee7ff', '#ffffff'];
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const sp = (380 + Math.pow(Math.random(), .7) * 980) * S;
+      const r0 = Math.random();
+      sparks.push({
+        x: c.x + Math.cos(a) * r0 * c.w * .42, y: c.y + Math.sin(a) * r0 * c.w * .24,
+        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * .85,
+        life: 0, max: .55 + Math.random() * .75, s: .8 + Math.random() * 2.2,
+        c: palette[(Math.random() * palette.length) | 0],
+      });
+    }
+    for (let i = 0; i < (lowEnd ? 14 : 24); i++) {
+      const a = Math.random() * Math.PI * 2, sp = (90 + Math.random() * 380) * S;
+      glows.push({
+        x: c.x, y: c.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+        life: 0, max: .5 + Math.random() * .6, r: (10 + Math.random() * 22) * S,
+        sp: Math.random() < .3 ? 1 : 0,
+      });
+    }
+    rings = [
+      { x: c.x, y: c.y, t: 0, dur: .8, R: Math.hypot(W, H) * .62, w: 8, col: 'rgb(170,255,205)' },
+      { x: c.x, y: c.y, t: -.08, dur: .9, R: Math.hypot(W, H) * .46, w: 5, col: 'rgb(110,230,255)' },
+    ];
+    flash.style.left = c.x + 'px';
+    flash.style.top = c.y + 'px';
+  }
+
+  // Partículas de "datos" que suben desde el código hacia el logo (se está cargando el programa).
+  function spawnBits(dt) {
+    if (bits.length > (lowEnd ? 22 : 36)) return;
+    const pr = panel.getBoundingClientRect(), c = logoCenter();
+    const k = dt * (lowEnd ? 20 : 34);                       // partículas por frame (media)
+    const count = Math.floor(k) + (Math.random() < k % 1 ? 1 : 0);
+    for (let i = 0; i < count; i++) {
+      const x = pr.left + 18 + Math.random() * (pr.width - 36);
+      bits.push({ x, y: pr.top - 4, tx: c.x + (Math.random() - .5) * c.w * .55, ty: c.y + (Math.random() - .5) * 30, p: 0, sp: .9 + Math.random() * .8, s: Math.random() < .5 ? 2 : 3 });
+    }
+  }
+
+  function drawFx(dt) {
+    ctx.clearRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'lighter';
+
+    // Bits de datos
+    for (let i = bits.length - 1; i >= 0; i--) {
+      const b = bits[i];
+      b.p += dt * b.sp;
+      if (b.p >= 1) { bits.splice(i, 1); continue; }
+      const e = easeInOut(b.p);
+      const x = lerp(b.x, b.tx, e), y = lerp(b.y, b.ty, e);
+      ctx.globalAlpha = Math.sin(b.p * Math.PI) * .9;
+      ctx.fillStyle = b.p > .7 ? '#d9ffe9' : '#46f08e';
+      ctx.fillRect(x, y, b.s, b.s);
+    }
+
+    // Anillos de onda expansiva: halo ancho y suave + línea fina y brillante
+    for (const r of rings) {
+      r.t += dt;
+      if (r.t <= 0 || r.t > r.dur) continue;
+      const p = r.t / r.dur, e = 1 - Math.pow(1 - p, 4), fade = Math.pow(1 - p, 1.8);
+      const rad = 20 + r.R * e;
+      ctx.strokeStyle = r.col;
+      ctx.globalAlpha = fade * .14;
+      ctx.lineWidth = r.w * 3 * (1 - p * .6);
+      ctx.beginPath(); ctx.arc(r.x, r.y, rad, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = fade * .7;
+      ctx.lineWidth = r.w * .35 * (1 - p) + .5;
+      ctx.beginPath(); ctx.arc(r.x, r.y, rad, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    // Destellos grandes (bolas de luz)
+    for (const g of glows) {
+      g.life += dt;
+      if (g.life >= g.max) continue;
+      const k = 1 - g.life / g.max, drag = Math.pow(.18, dt);
+      g.vx *= drag; g.vy *= drag;
+      g.x += g.vx * dt; g.y += g.vy * dt;
+      ctx.globalAlpha = k * .75;
+      const rr = g.r * (.6 + .4 * k);
+      ctx.drawImage(g.sp ? sprites.cyan : sprites.green, g.x - rr, g.y - rr, rr * 2, rr * 2);
+    }
+
+    // Chispas con estela (líneas cortas en la dirección del movimiento)
+    ctx.lineCap = 'round';
+    for (const p of sparks) {
+      p.life += dt;
+      if (p.life >= p.max) continue;
+      const k = 1 - p.life / p.max, drag = Math.pow(.09, dt);
+      p.vx *= drag; p.vy = p.vy * drag + 170 * dt;
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      ctx.globalAlpha = Math.min(1, k * 1.25);
+      ctx.strokeStyle = p.c;
+      ctx.lineWidth = p.s * (.5 + .5 * k);
+      ctx.beginPath();
+      ctx.moveTo(p.x - p.vx * .028, p.y - p.vy * .028);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  // ---- Un frame de la animación ----
+  function frame(now) {
+    if (finished) return;
+    if (!start) { start = now; last = now; }
+    t = (now - start) / 1000;
+    const dt = Math.min(.05, (now - last) / 1000);
+    last = now;
+
+    // 1) Entrada del logo: escala + fade + desenfoque que se aclara + inclinación 3D
+    const pIn = easeOut(seg(t, T.IN0, T.IN1));
+    const op = seg(t, T.IN0, .95);
+    const charge = easeIn(seg(t, T.OUT0, T.BOOM));          // "carga" antes de explotar
+    const boomP = easeOut(seg(t, T.BOOM, T.BOOM + .2));
+    const scale = (.8 + .2 * pIn) * (1 - .07 * charge) * (1 + .35 * boomP);
+    const rx = 20 * (1 - pIn) + 6 + Math.cos(t * .9) * 1.6 + Parallax.y * 6;
+    const ry = -18 * (1 - pIn) + Math.sin(t * 1.15) * 5 + Parallax.x * 9;
+    logo.style.opacity = (op * (1 - boomP)).toFixed(3);
+    logo.style.transform = `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) scale(${scale.toFixed(4)})`;
+    const blur = 9 * (1 - pIn);
+    logo.style.filter = blur > .15 ? `blur(${blur.toFixed(2)}px)` : 'none';
+
+    // 2) Cambio de color azul → verde (fundido cruzado de dos capas)
+    const g = easeInOut(seg(t, T.G0, T.G1));
+    lgGreen.setAttribute('opacity', g.toFixed(3));
+    lgBlue.setAttribute('opacity', (1 - g * .999).toFixed(3));
+    const pulse = .82 + .18 * Math.sin(t * 5.2);           // energía: el brillo "respira"
+    const glowI = op * (1 - boomP) * (g > 0 ? lerp(1, pulse, g) : 1) * (1 + .7 * charge);
+    const gs = 1 + .03 * Math.sin(t * 2.4) + .22 * charge + .9 * boomP;
+    glowB.style.opacity = (glowI * (1 - g)).toFixed(3);
+    glowG.style.opacity = Math.min(1, glowI * g).toFixed(3);
+    glowB.style.transform = glowG.style.transform = `translate(-50%, -50%) scale(${gs.toFixed(3)})`;
+    floorB.style.opacity = (op * (1 - g) * (1 - boomP) * .9).toFixed(3);
+    floorG.style.opacity = (op * g * (1 - boomP) * pulse).toFixed(3);
+    eyes.setAttribute('opacity', (g * (charge > 0 ? 1 : .35 + .65 * Math.pow(Math.sin(t * 3.4), 2))).toFixed(3));
+
+    // 3) Reflejo que recorre el logo (3 pasadas)
+    let sx = null;
+    for (const [a, b] of SWEEPS) if (t >= a && t <= b) sx = -150 + 490 * easeInOut(seg(t, a, b));
+    if (sx !== null) { sheen.setAttribute('transform', `translate(${sx.toFixed(1)} 0) skewX(-20)`); sheenOff = false; }
+    else if (!sheenOff) { sheen.setAttribute('transform', 'translate(-200 0) skewX(-20)'); sheenOff = true; }
+
+    // 4) Flujo de datos recorriendo el contorno
+    const sv = seg(t, 2.5, 2.9) * (1 - seg(t, 4.3, 4.45));
+    streamsG.setAttribute('opacity', sv.toFixed(3));
+    if (sv > 0) {
+      const speed = [300, 380, 460];
+      const phase = [0, 333, 666];
+      streams.forEach(p => {
+        const i = +p.dataset.s;
+        p.setAttribute('stroke-dashoffset', (-((t * speed[i] * (1 + charge * 2.5) + phase[i]) % 1000)).toFixed(1));
+      });
+    }
+
+    // 5) Panel de código: aparece, se escribe solo, barra de progreso y se va
+    const pin = easeOut(seg(t, T.P0, T.P1)), pout = easeIn(seg(t, T.OUT0, T.OUT1));
+    panel.style.opacity = (pin * (1 - pout)).toFixed(3);
+    panel.style.transform = `translateY(${((1 - pin) * 16 - pout * 8).toFixed(2)}px) scale(${(.97 + .03 * pin - .04 * pout).toFixed(4)})`;
+    if (t >= T.TY0 - .05) renderCode(Math.floor(seg(t, T.TY0, T.TY1) * CODE_LEN));
+    const pr = easeInOut(seg(t, T.TY0, T.PR1));
+    bar.style.transform = `scaleX(${pr.toFixed(4)})`;
+    const pct = Math.round(pr * 100);
+    if (pct !== lastPct) {
+      lastPct = pct;
+      progPct.textContent = pct + '%';
+      if (pct === 100) progTxt.textContent = '✓ Programa cargado';
+    }
+
+    // 6) Indicación de "toca para saltar"
+    skipHint.style.opacity = (seg(t, .9, 1.4) * (1 - seg(t, 3.9, 4.2)) * .9).toFixed(3);
+
+    // 7) Canvas: bits subiendo y, después, la explosión
+    if (t > 2.55 && t < 3.95 && !reduceMotion) spawnBits(dt);
+    if (!boomed && t >= T.BOOM) boom();
+    drawFx(dt);
+
+    // 8) Destello de la explosión
+    if (boomed) {
+      const fUp = seg(t, T.BOOM, T.BOOM + .06), fDown = seg(t, T.BOOM + .06, T.BOOM + .6);
+      flash.style.opacity = (fUp * (1 - easeOut(fDown)) * .95).toFixed(3);
+      flash.style.transform = `translate(-50%, -50%) scale(${(.4 + 1.1 * easeOut(seg(t, T.BOOM, T.BOOM + .7))).toFixed(3)})`;
+    }
+
+    // 9) La app emerge de la explosión y la intro se desvanece
+    if (!revealed && t >= T.REVEAL) { revealed = true; onReveal(); }
+    root.style.opacity = (1 - easeInOut(seg(t, T.F0, T.F1))).toFixed(3);
+
+    if (t >= T.END) finish();
+    else raf = requestAnimationFrame(frame);
+  }
+
+  function finish() {
+    if (finished) return;
+    finished = true;
+    cancelAnimationFrame(raf);
+    if (!revealed) { revealed = true; onReveal(); }
+    root.hidden = true;
+    cv.width = cv.height = 0;                      // libera memoria del canvas
+    removeEventListener('resize', resize);
+    resolveDone();
+  }
+
+  // Saltar: adelanta el reloj justo hasta antes de la explosión (para no perder el final).
+  function skip() {
+    if (t < T.OUT0 - .05 && start) start -= (T.OUT0 - .05 - t) * 1000;
+  }
+
+  // Versión para "movimiento reducido": logo verde, fundido y listo.
+  function playReduced() {
+    lgGreen.setAttribute('opacity', 1);
+    lgBlue.setAttribute('opacity', 0);
+    logo.style.transition = 'opacity .6s ease';
+    root.style.transition = 'opacity .5s ease';
+    glowG.style.opacity = '.8';
+    glowG.style.transform = 'translate(-50%, -50%)';
+    requestAnimationFrame(() => { logo.style.opacity = 1; });
+    setTimeout(() => { revealed = true; onReveal(); root.style.opacity = 0; }, 1100);
+    setTimeout(() => { finished = true; root.hidden = true; resolveDone(); }, 1650);
+  }
+
+  function play(revealCb) {
+    onReveal = revealCb || onReveal;
+    return new Promise(resolve => {
+      resolveDone = resolve;
+      try {
+        if (reduceMotion) { playReduced(); return; }
+        sprites = { green: makeSprite('60,240,140'), cyan: makeSprite('110,230,255') };
+        resize();
+        addEventListener('resize', resize);
+        root.addEventListener('pointerdown', skip);
+        addEventListener('keydown', e => { if (!finished && ['Enter', ' ', 'Escape'].includes(e.key)) skip(); });
+        raf = requestAnimationFrame(frame);
+        // Red de seguridad: pase lo que pase, la intro termina.
+        setTimeout(finish, 9000);
+      } catch (e) {
+        console.error('[Intro]', e);
+        finish();
+      }
+    });
+  }
+
+  return { play };
+})();
+
+/* ========== 8. DIÁLOGO DE BIENVENIDA / AJUSTES ========== */
+const Sheet = (() => {
+  const modal = $('#modal'), title = $('#sheetTitle'), text = $('#sheetText'), actions = $('#sheetActions');
+  const themeSeg = $('#themeSeg'), sw = $('#accentSw'), hap = $('#hapticsSw'), scrim = $('#modalScrim');
+  let resolver = null, mode = 'welcome';
+
+  function sync() {
+    themeSeg.dataset.v = Prefs.data.theme;
+    $$('button', themeSeg).forEach(b => b.setAttribute('aria-checked', String(b.dataset.v === Prefs.data.theme)));
+    $$('button', sw).forEach(b => b.setAttribute('aria-checked', String(b.dataset.v === Prefs.data.accent)));
+    hap.setAttribute('aria-checked', String(Prefs.data.haptics));
+  }
+  themeSeg.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    Prefs.set('theme', b.dataset.v); sync(); Haptics.pulse(8);
+  });
+  sw.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    Prefs.set('accent', b.dataset.v); sync(); Haptics.pulse(8);
+  });
+  hap.addEventListener('click', () => {
+    Prefs.set('haptics', !Prefs.data.haptics); sync(); Haptics.pulse(15);
+  });
+
+  function button(label, cls, icon, value) {
+    const b = document.createElement('button');
+    b.className = `btn ${cls}`;
+    b.innerHTML = icon ? `<svg class="ic"><use href="#${icon}"/></svg>` : '';
+    b.append(label);
+    b.addEventListener('click', () => { Haptics.pulse(10); close(value); });
+    return b;
+  }
+
+  function open(m = 'welcome') {
+    mode = m;
+    actions.innerHTML = '';
+    if (m === 'welcome') {
+      title.textContent = '¿Quieres una guía rápida?';
+      text.textContent = 'Te enseño en medio minuto para qué sirve cada control. Antes, elige cómo quieres ver la app.';
+      actions.append(button('No, gracias', 'ghost', null, 'skip'), button('Sí, guíame', 'primary', 'i-guide', 'tour'));
+    } else {
+      title.textContent = 'Ajustes';
+      text.textContent = 'Personaliza la app o repite la guía cuando quieras.';
+      actions.append(button('Ver guía', 'ghost', 'i-guide', 'tour'), button('Listo', 'primary', 'i-check', 'close'));
+    }
+    sync();
+    modal.hidden = false;
+    document.body.classList.add('lock');
+    requestAnimationFrame(() => requestAnimationFrame(() => modal.classList.add('on')));
+    setTimeout(() => { const p = $('.btn.primary', actions); p && p.focus({ preventScroll: true }); }, 350);
+    return new Promise(r => { resolver = r; });
+  }
+  function close(value) {
+    if (modal.hidden || !resolver) return;
+    modal.classList.remove('on');
+    setTimeout(() => { modal.hidden = true; if (!Tour.active) document.body.classList.remove('lock'); }, 420);
+    const r = resolver; resolver = null; r(value);
+  }
+  scrim.addEventListener('click', () => close(mode === 'welcome' ? 'skip' : 'close'));
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) close(mode === 'welcome' ? 'skip' : 'close'); });
+
+  return { open, get isOpen() { return !modal.hidden; } };
+})();
+
+/* ========== 9. GUÍA PASO A PASO ========== */
+const Tour = (() => {
+  const el = $('#tour'), hole = $('#tourHole'), card = $('#tourCard');
+  const stepEl = $('#tourStep'), titleEl = $('#tourTitle'), textEl = $('#tourText'), dots = $('#tourDots');
+  const nextBtn = $('#tourNext'), skipBtn = $('#tourSkip');
+  const STEPS = [
+    { sel: '#status', title: 'Estado de la conexión', text: 'Te dice en todo momento cómo está el coche: gris = desconectado, ámbar = conectando, verde = conectado.', round: true },
+    { sel: '#connectBtn', title: 'Conectar', text: 'Púlsalo y elige tu «BBC micro:bit» en la lista. Se conecta por Bluetooth, sin códigos. Vuelve a pulsarlo para desconectar.' },
+    { sel: '#pad', title: 'Cruceta de movimiento', text: 'Mantén pulsada una flecha para avanzar, retroceder o girar. Al soltarla, el coche se para solo.', round: true, pad: 4 },
+    { sel: '#stopBtn', title: 'PARAR', text: 'Freno de emergencia: detiene el coche al instante, pase lo que pase.', round: true, pad: 12 },
+    { sel: '#speedCard', title: 'Velocidad', text: 'Desliza de 0 a 100 para ajustar la potencia. El arco cambia de color: azul suave, verde normal, naranja rápido.' },
+    { sel: '#extras', title: 'Extras', text: 'Bocina hace sonar el zumbador. Luces enciende o apaga los intermitentes. Seguridad activa la frenada automática con el sensor.' },
+    { sel: '#settingsBtn', title: 'Ajustes', text: 'Cambia el tema, el color o la vibración, y repite esta guía cuando quieras. ¡A conducir!', round: true },
+  ];
+  let i = 0, resolver = null, active = false, target = null;
+
+  dots.innerHTML = STEPS.map(() => '<i></i>').join('');
+
+  function place() {
+    if (!target) return;
+    const s = STEPS[i];
+    const r = target.getBoundingClientRect();
+    const pad = s.pad ?? 8;
+    const x = r.left - pad, y = r.top - pad, w = r.width + pad * 2, h = r.height + pad * 2;
+    const br = s.round ? Math.min(w, h) / 2 : (parseFloat(getComputedStyle(target).borderTopLeftRadius) || 16) + pad;
+    hole.style.width = w + 'px';
+    hole.style.height = h + 'px';
+    hole.style.borderRadius = br + 'px';
+    hole.style.transform = `translate(${x}px, ${y}px)`;
+    // La tarjeta va debajo si cabe; si no, encima.
+    const cw = Math.min(360, innerWidth - 32);
+    card.style.width = cw + 'px';
+    const ch = card.offsetHeight;
+    let top = y + h + 14;
+    if (top + ch > innerHeight - 12) top = y - 14 - ch;
+    if (top < 12) top = clamp(innerHeight - ch - 16, 12, innerHeight);
+    const left = clamp(x + w / 2 - cw / 2, 16, innerWidth - cw - 16);
+    card.style.transform = `translate(${left}px, ${top}px)`;
+  }
+
+  async function show() {
+    const s = STEPS[i];
+    target = $(s.sel);
+    card.classList.add('swap');
+    const r = target.getBoundingClientRect();
+    if (r.top < 70 || r.bottom > innerHeight - 190) {
+      target.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' });
+      await sleep(420);
+    }
+    await sleep(140);
+    stepEl.textContent = `Paso ${i + 1} de ${STEPS.length}`;
+    titleEl.textContent = s.title;
+    textEl.textContent = s.text;
+    nextBtn.textContent = i === STEPS.length - 1 ? '¡Listo!' : 'Siguiente';
+    $$('i', dots).forEach((d, k) => d.classList.toggle('on', k === i));
+    place();
+    card.classList.remove('swap');
+  }
+
+  function next() {
+    Haptics.pulse(8);
+    if (i < STEPS.length - 1) { i++; show(); } else end();
+  }
+  function end() {
+    if (!active) return;
+    active = false;
+    el.classList.remove('on');
+    setTimeout(() => { el.hidden = true; document.body.classList.remove('lock'); }, 420);
+    const r = resolver; resolver = null; r && r();
+  }
+
+  nextBtn.addEventListener('click', next);
+  skipBtn.addEventListener('click', () => { Haptics.pulse(8); end(); });
+  addEventListener('resize', () => active && place());
+  addEventListener('keydown', e => {
+    if (!active) return;
+    if (e.key === 'Escape') end();
+    else if (e.key === 'Enter' || e.key === 'ArrowRight') { e.preventDefault(); next(); }
+  });
+  // Evitar que la página se desplace por debajo de la guía.
+  el.addEventListener('wheel', e => e.preventDefault(), { passive: false });
+  el.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+
+  function start() {
+    return new Promise(resolve => {
+      resolver = resolve;
+      active = true;
+      i = 0;
+      document.body.classList.add('lock');
+      el.hidden = false;
+      requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('on')));
+      show();
+      setTimeout(() => nextBtn.focus({ preventScroll: true }), 400);
+    });
+  }
+  return { start, get active() { return active; } };
+})();
+
+/* =======================================================================
+   10. CONTROLES DEL COCHE
+   ======================================================================= */
+const ui = {
+  status: $('#status'), statusText: $('#statusText'), statusIcon: $('#statusIcon'),
+  connectBtn: $('#connectBtn'), connectLabel: $('#connectLabel'), connectSub: $('#connectSub'), connectIcon: $('#connectIcon'), cbFlash: $('#cbFlash'),
+  pad: $('#pad'), stopBtn: $('#stopBtn'), stopRing: $('#stopRing'),
+  speed: $('#speed'), speedCard: $('#speedCard'), speedNum: $('#speedNum'), speedTag: $('#speedTag'), gVal: $('#gVal'),
+  horn: $('#hornBtn'), lights: $('#lightsBtn'), safety: $('#safetyBtn'),
+  lastCmd: $('#lastCmd'), lastRx: $('#lastRx'),
+  notice: $('#notice'), noticeTitle: $('#noticeTitle'), noticeText: $('#noticeText'),
+  settings: $('#settingsBtn'),
+};
+
+let support = { ok: true };
+let prevState = 'disconnected';
+const extrasState = { luces: false, seguridad: false };
+
+// --- Instancia del Bluetooth con sus "manejadores" de eventos ---
+const ble = new MicrobitUART({
+  onStatus: (state, info) => {
+    renderConnection(state, info);
+    if (state === 'connected') {
+      Haptics.pulse([12, 60, 18]);
+      ui.cbFlash.animate(
+        [{ transform: 'scale(1)', opacity: .9 }, { transform: 'scale(2.6)', opacity: 0 }],
+        { duration: 750, easing: EASE }
+      );
+      // Al conectar: estados de extras a OFF, coche parado y velocidad sincronizada.
+      setExtra('luces', false); setExtra('seguridad', false);
+      ble.send('parar');
+      ble.send('vel' + speedValue());
+      lastVelSent = speedValue();
+      Toast.show({ type: 'ok', title: info.reconnected ? 'Reconectado' : '¡Conectado!', text: info.name || 'BBC micro:bit' });
+    } else if (prevState === 'connected') {
+      releaseAll(false);                                  // conexión perdida: la cruceta vuelve a reposo
+    }
+    if (state === 'disconnected') {
+      releaseAll(false);
+      if (info.reason === 'lost') {
+        Haptics.pulse([40, 60, 40]);
+        Toast.show({ type: 'error', title: 'Se perdió la conexión', text: 'El coche se ha desconectado.', action: { label: 'Reconectar', run: () => tryConnect(true) } });
+      } else if (info.reason === 'user' && prevState === 'connected') {
+        Toast.show({ type: 'info', title: 'Coche desconectado' });
+      }
+    }
+    prevState = state;
+  },
+  onSent: cmd => showSent(cmd, 'sent'),
+  onReceive: text => {
+    ui.lastRx.textContent = text.length > 18 ? text.slice(0, 17) + '…' : text;
+    ui.lastRx.dataset.state = 'sent';
+    ui.lastRx.animate([{ opacity: .3 }, { opacity: 1 }], { duration: 300, easing: EASE });
+  },
+  onSendError: () => { /* el reintento ya se hizo; no saturamos con avisos */ },
+});
+
+function renderConnection(state, info = {}) {
+  const S = { disconnected: ['Desconectado', 'i-bt-off'], connecting: ['Conectando…', 'i-bt'], connected: ['Conectado', 'i-bt-on'] }[state];
+  ui.status.dataset.state = state;
+  ui.statusText.textContent = S[0];
+  ui.statusIcon.setAttribute('href', '#' + S[1]);
+  ui.connectBtn.dataset.state = state;
+  if (state === 'connecting') {
+    ui.connectIcon.setAttribute('href', '#i-bt');
+    if (info.phase === 'search') { ui.connectLabel.textContent = 'Buscando…'; ui.connectSub.textContent = 'Elige tu «BBC micro:bit» en la lista'; }
+    else if (info.phase === 'reconnect') { ui.connectLabel.textContent = 'Reconectando…'; ui.connectSub.textContent = `Intento ${info.attempt} · toca para cancelar`; }
+    else { ui.connectLabel.textContent = 'Conectando…'; ui.connectSub.textContent = info.name || 'micro:bit'; }
+  } else if (state === 'connected') {
+    ui.connectIcon.setAttribute('href', '#i-check');
+    ui.connectLabel.textContent = 'Desconectar';
+    ui.connectSub.textContent = info.name || 'BBC micro:bit';
+  } else {
+    ui.connectIcon.setAttribute('href', '#i-bt');
+    ui.connectLabel.textContent = ble.device ? 'Conectar de nuevo' : 'Conectar coche';
+    ui.connectSub.textContent = support.ok ? 'Toca para buscar tu micro:bit' : 'Bluetooth no disponible aquí';
+  }
+}
+
+async function tryConnect(reuseDevice = false) {
+  if (!support.ok) {
+    Toast.show({ type: 'warn', title: support.title, text: support.text });
+    ui.notice.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.02)' }, { transform: 'scale(1)' }], { duration: 400, easing: EASE });
+    return;
+  }
+  try {
+    if (reuseDevice && ble.device) await ble.reconnect();
+    else await ble.connect();
+  } catch (e) {
+    console.warn('[BLE]', e);
+    const info = explainBleError(e);
+    if (info) {
+      if (info.type !== 'info') Haptics.pulse([30, 50, 30]);
+      Toast.show(info);
+    }
+  }
+}
+
+ui.connectBtn.addEventListener('click', () => {
+  Haptics.pulse(10);
+  if (ble.state === 'connected') ble.disconnect();
+  else if (ble.state === 'connecting') { if (ble.device) ble.disconnect(); }   // cancelar reconexión
+  else tryConnect(false);
+});
+
+// --- Enviar un comando (con feedback visual del protocolo) ---
+let lastNudge = 0;
+function send(cmd, { quiet = false } = {}) {
+  const ok = ble.send(cmd);
+  showSent(cmd, ok ? 'pending' : 'offline');
+  if (!ok && !quiet) nudgeConnect();
+  return ok;
+}
+function showSent(cmd, state) {
+  ui.lastCmd.textContent = cmd;
+  ui.lastCmd.dataset.state = state;
+  if (state !== 'sent') ui.lastCmd.animate([{ opacity: .35, transform: 'translateY(3px)' }, { opacity: 1, transform: 'none' }], { duration: 240, easing: EASE });
+}
+// Si no hay conexión: aviso elegante (como mucho cada 2,5 s) y el botón Conectar "tiembla".
+function nudgeConnect() {
+  const now = performance.now();
+  ui.connectBtn.classList.remove('shake');
+  void ui.connectBtn.offsetWidth;
+  ui.connectBtn.classList.add('shake');
+  if (now - lastNudge < 2500 || ble.state === 'connecting') return;
+  lastNudge = now;
+  Toast.show(support.ok
+    ? { type: 'info', title: 'Conecta primero el coche', text: 'Pulsa Conectar y elige tu micro:bit.', action: { label: 'Conectar', run: () => tryConnect(false) } }
+    : { type: 'warn', title: support.title, text: support.text });
+}
+
+/* --- Cruceta: mantener pulsado = moverse, soltar = parar ---
+   Usamos Pointer Events (sirven para dedo, ratón y lápiz) y "capturamos" el
+   puntero para no perder el "soltar" aunque el dedo se salga del botón.
+   Si hay varios dedos, al soltar uno vuelve a la dirección que siga pulsada. */
+const held = new Map();      // id del puntero/tecla → { btn, cmd }
+let moveCmd = 'parar';
+
+function setMove(cmd, force = false) {
+  if (cmd === moveCmd && !force) return;
+  moveCmd = cmd;
+  const moving = cmd !== 'parar';
+  ui.pad.dataset.moving = moving ? '1' : '0';
+  if (moving) ui.pad.dataset.last = cmd;
+  send(cmd, { quiet: !moving });
+}
+
+function pressDir(btn, id) {
+  held.set(id, { btn, cmd: btn.dataset.cmd });
+  btn.classList.add('is-pressed');
+  Haptics.pulse(12);
+  setMove(btn.dataset.cmd);
+}
+function releaseDir(id) {
+  const h = held.get(id);
+  if (!h) return;
+  held.delete(id);
+  const rest = [...held.values()];
+  if (!rest.some(v => v.btn === h.btn)) h.btn.classList.remove('is-pressed');
+  setMove(rest.length ? rest[rest.length - 1].cmd : 'parar');
+}
+function releaseAll(sendStop = true) {
+  held.forEach(h => h.btn.classList.remove('is-pressed'));
+  held.clear();
+  ui.pad.dataset.moving = '0';
+  if (sendStop) setMove('parar', true);
+  else moveCmd = 'parar';
+}
+
+$$('.dbtn', ui.pad).forEach(btn => {
+  btn.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    try { btn.setPointerCapture(e.pointerId); } catch (err) { /* nada */ }
+    pressDir(btn, 'p' + e.pointerId);
+  });
+  const up = e => releaseDir('p' + e.pointerId);
+  btn.addEventListener('pointerup', up);
+  btn.addEventListener('pointercancel', up);
+  btn.addEventListener('lostpointercapture', up);
+});
+ui.pad.addEventListener('contextmenu', e => e.preventDefault());   // sin menú al mantener pulsado
+
+// PARAR: siempre envía "parar", aunque ya estuviera parado.
+ui.stopBtn.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  ui.stopBtn.classList.add('is-pressed');
+  Haptics.pulse(28);
+  ui.stopRing.animate([{ transform: 'scale(1)', opacity: .8 }, { transform: 'scale(1.7)', opacity: 0 }], { duration: 600, easing: EASE });
+  releaseAll(true);
+});
+['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => ui.stopBtn.addEventListener(ev, () => ui.stopBtn.classList.remove('is-pressed')));
+ui.stopBtn.addEventListener('keydown', e => { if (e.key === 'Enter') releaseAll(true); });
+
+// Teclado en el ordenador: flechas / WASD (mantener) y Espacio = parar, H = bocina.
+const KEYS = { ArrowUp: 'avanzar', KeyW: 'avanzar', ArrowDown: 'atras', KeyS: 'atras', ArrowLeft: 'izquierda', KeyA: 'izquierda', ArrowRight: 'derecha', KeyD: 'derecha' };
+addEventListener('keydown', e => {
+  if (Sheet.isOpen || Tour.active || !$('#intro').hidden) return;
+  if (document.activeElement === ui.speed && e.code.startsWith('Arrow')) return;
+  const cmd = KEYS[e.code];
+  if (cmd) {
+    e.preventDefault();
+    if (e.repeat) return;
+    pressDir($(`.dbtn[data-cmd="${cmd}"]`, ui.pad), 'k' + e.code);
+  } else if (e.code === 'Space' && !e.repeat && !(document.activeElement instanceof HTMLButtonElement)) {
+    e.preventDefault(); ui.stopBtn.dispatchEvent(new PointerEvent('pointerdown'));
+    setTimeout(() => ui.stopBtn.classList.remove('is-pressed'), 160);
+  } else if (e.code === 'KeyH' && !e.repeat) {
+    ui.horn.click();
+  }
+});
+addEventListener('keyup', e => { if (KEYS[e.code]) releaseDir('k' + e.code); });
+
+// Seguridad extra ("hombre muerto"): si la app pasa a segundo plano mientras te mueves, se para.
+function deadMan() { if (moveCmd !== 'parar' || held.size) releaseAll(true); }
+document.addEventListener('visibilitychange', () => { if (document.hidden) deadMan(); });
+addEventListener('pagehide', deadMan);
+addEventListener('blur', deadMan);
+
+/* --- Velocidad: arco que se llena y cambia de color (azul → verde → naranja) --- */
+const SPEED_STOPS = [[0, [56, 160, 255]], [50, [52, 226, 122]], [80, [255, 190, 60]], [100, [255, 124, 52]]];
+function speedColor(v) {
+  for (let k = 1; k < SPEED_STOPS.length; k++) {
+    const [v1, c1] = SPEED_STOPS[k], [v0, c0] = SPEED_STOPS[k - 1];
+    if (v <= v1) {
+      const p = (v - v0) / (v1 - v0);
+      return `rgb(${c0.map((c, j) => Math.round(lerp(c, c1[j], p))).join(' ')})`;
+    }
+  }
+  return 'rgb(255 124 52)';
+}
+const speedValue = () => clamp(parseInt(ui.speed.value, 10) || 0, 0, 100);
+function renderSpeed(v) {
+  ui.gVal.style.strokeDasharray = `${Math.max(v, .001)} 100`;
+  ui.gVal.style.opacity = v === 0 ? '0' : '1';
+  ui.speedCard.style.setProperty('--spd', speedColor(v));
+  ui.speedCard.style.setProperty('--p', v + '%');
+  ui.speedNum.textContent = v;
+  ui.speedTag.textContent = v === 0 ? 'PARADO' : v <= 35 ? 'SUAVE' : v <= 70 ? 'NORMAL' : 'RÁPIDO';
+}
+// Envío de "velXX" limitado a uno cada 80 ms (con el valor final garantizado).
+let lastVelSent = null, velTimer = null, lastVelTime = 0;
+function sendVel(force = false) {
+  clearTimeout(velTimer);
+  velTimer = null;
+  const v = speedValue();
+  if (v === lastVelSent && !force) return;
+  lastVelTime = performance.now();
+  if (ble.connected) { lastVelSent = v; send('vel' + v, { quiet: true }); }
+  else showSent('vel' + v, 'offline');
+}
+ui.speed.addEventListener('input', () => {
+  const v = speedValue();
+  renderSpeed(v);
+  if (v % 10 === 0) Haptics.pulse(4);
+  const wait = 80 - (performance.now() - lastVelTime);
+  if (wait <= 0) sendVel();
+  else if (!velTimer) velTimer = setTimeout(sendVel, wait);
+});
+ui.speed.addEventListener('change', () => sendVel());
+
+/* --- Extras --- */
+function setExtra(key, on) {
+  extrasState[key] = on;
+  const btn = key === 'luces' ? ui.lights : ui.safety;
+  btn.setAttribute('aria-pressed', String(on));
+  $('.x-state', btn).textContent = on ? 'ON' : 'OFF';
+}
+ui.horn.addEventListener('click', () => {
+  Haptics.pulse([14, 40, 14]);
+  $$('.x-wave', ui.horn).forEach((w, k) => w.animate(
+    [{ transform: 'scale(1)', opacity: .7 }, { transform: 'scale(1.9)', opacity: 0 }],
+    { duration: 700, delay: k * 160, easing: EASE }
+  ));
+  ui.horn.classList.add('honk');
+  setTimeout(() => ui.horn.classList.remove('honk'), 500);
+  send('bocina');
+});
+// Luces y Seguridad son interruptores: el micro:bit alterna su estado con cada comando.
+[[ui.lights, 'luces'], [ui.safety, 'seguridad']].forEach(([btn, key]) => {
+  btn.addEventListener('click', () => {
+    Haptics.pulse(12);
+    if (!send(key)) {
+      btn.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(3px)' }, { transform: 'translateX(0)' }], { duration: 300, easing: EASE });
+      return;
+    }
+    setExtra(key, !extrasState[key]);
+  });
+});
+
+// Ajustes
+ui.settings.addEventListener('click', async () => {
+  Haptics.pulse(8);
+  const r = await Sheet.open('settings');
+  if (r === 'tour') { await sleep(300); Tour.start(); }
+});
+
+/* ========== 11. ARRANQUE ========== */
+function renderSupport() {
+  support = Support.check();
+  ui.notice.hidden = support.ok;
+  if (!support.ok) {
+    ui.noticeTitle.textContent = support.title;
+    ui.noticeText.textContent = support.text;
+  }
+  renderConnection('disconnected');
+  // Si el adaptador Bluetooth está apagado o no existe, lo avisamos (y lo quitamos al activarlo).
+  if (support.ok && navigator.bluetooth.getAvailability) {
+    const showOff = available => {
+      if (!available) {
+        ui.notice.hidden = false;
+        ui.noticeTitle.textContent = 'Bluetooth no disponible';
+        ui.noticeText.textContent = 'Activa el Bluetooth del dispositivo para conectar con el coche.';
+      } else if (support.ok) ui.notice.hidden = true;
+    };
+    navigator.bluetooth.getAvailability().then(showOff).catch(() => {});
+    try { navigator.bluetooth.addEventListener('availabilitychanged', e => showOff(e.value)); } catch (e) { /* no soportado */ }
+  }
+}
+
+async function boot() {
+  Prefs.load().apply();
+  Parallax.init();
+  renderSpeed(speedValue());
+  renderSupport();
+  // Esperamos (como mucho medio segundo) a la tipografía para que el logo no "salte".
+  try { await Promise.race([document.fonts ? document.fonts.ready : null, sleep(500)]); } catch (e) { /* nada */ }
+  try {
+    await Intro.play(() => document.body.classList.add('app-in'));
+  } catch (e) {
+    console.error(e);
+    document.body.classList.add('app-in');
+    $('#intro').hidden = true;
+  }
+  document.body.classList.remove('lock');
+  await sleep(reduceMotion ? 0 : 280);          // deja terminar la entrada de las tarjetas
+  const choice = await Sheet.open('welcome');
+  if (choice === 'tour') { await sleep(300); await Tour.start(); }
+}
+
+// Para depurar desde la consola durante la presentación: SV.ble, SV.send('avanzar')
+window.SV = { ble, send };
+boot();
+</script>
+</body>
+</html>
+<!--
+  =====================================================================
+  CÓMO ABRIR LA APP (Web Bluetooth necesita HTTPS o localhost)
+  =====================================================================
+  · Opción fácil — GitHub Pages: en el repositorio, Settings → Pages →
+    "Deploy from a branch" → rama y carpeta / (root) → Save. En 1-2 min
+    tendrás https://TU-USUARIO.github.io/NOMBRE-REPO/ . Ábrelo en Chrome
+    del móvil Android y pulsa "Conectar coche".
+  · En el ordenador — servidor local: en la carpeta del proyecto ejecuta
+      python -m http.server 8000      (o:  npx serve)
+    y abre http://localhost:8000 en Chrome o Edge.
+  · Doble clic en index.html abre la interfaz, pero el Bluetooth puede no
+    funcionar desde file:// — para conectar usa una de las dos opciones.
+  · iPhone/iPad: Safari no soporta Web Bluetooth; usa la app «Bluefy».
+-->
