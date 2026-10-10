@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark" data-accent="green">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Memoria del proyecto · Seguridad Vial con micro:bit</title>
+<meta name="description" content="Memoria interactiva del proyecto STEM Seguridad Vial con micro:bit: robot Maqueen controlado por Bluetooth desde una app web.">
+<meta name="theme-color" content="#060a11">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23060a11'/%3E%3Crect x='9' y='18' width='46' height='28' rx='12' fill='none' stroke='%2334e27a' stroke-width='5'/%3E%3Ccircle cx='25' cy='32' r='4' fill='%2334e27a'/%3E%3Ccircle cx='39' cy='32' r='4' fill='%2334e27a'/%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<!-- Aplica el tema guardado ANTES de pintar. Usa la MISMA clave de localStorage que index.html:
+     si el profesor abre primero la app y luego la memoria (o al revés), el tema y el color
+     de acento se mantienen, porque ambas páginas viven en el mismo sitio (mismo origen). -->
+<script>
+  (function () {
+    try {
+      var p = JSON.parse(localStorage.getItem('sv-prefs-v1') || '{}');
+      var d = document.documentElement;
+      d.dataset.theme = p.theme === 'light' ? 'light' : 'dark';
+      d.dataset.accent = ['green', 'cyan', 'violet'].indexOf(p.accent) >= 0 ? p.accent : 'green';
+    } catch (e) { /* sin almacenamiento: valores por defecto */ }
+  })();
+</script>
+
+<style>
+/* =====================================================================
+   1. TOKENS DE DISEÑO — idénticos a index.html para que la memoria se
+   sienta "de la misma familia" que la app de control.
+   ===================================================================== */
+:root {
+  --ease: cubic-bezier(.22, 1, .36, 1);
+  --ease-io: cubic-bezier(.65, 0, .35, 1);
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --r-lg: 24px; --r-md: 18px; --r-sm: 12px;
+  --ok: 52 226 122; --warn: 255 176 32; --danger: 255 59 78; --off: 139 151 170; --amber: 255 184 46;
+  --content-w: 760px;
+}
+:root, :root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #060a11; --bg-2: #0c1524; --text: #e9eef6; --muted: #8b97aa;
+  --faint: rgba(255,255,255,.055); --faint-2: rgba(255,255,255,.09); --line: rgba(255,255,255,.085);
+  --glass: rgba(17,25,39,.55); --glass-strong: rgba(15,22,35,.86); --glass-hi: rgba(255,255,255,.07); --glass-border: rgba(255,255,255,.085);
+  --shadow: 0 18px 40px -14px rgba(0,0,0,.65); --dot: rgba(255,255,255,.075);
+  --orb-k: 1; --glow-k: 1; --on-a: #04130a; --scrim: rgba(2,5,10,.7);
+  --code-bg: rgba(255,255,255,.04); --code-text: #d7dee9;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #edf1f6; --bg-2: #f8fafc; --text: #0e1726; --muted: #5d697c;
+  --faint: rgba(15,23,42,.045); --faint-2: rgba(15,23,42,.085); --line: rgba(15,23,42,.08);
+  --glass: rgba(255,255,255,.62); --glass-strong: rgba(255,255,255,.92); --glass-hi: rgba(255,255,255,.95); --glass-border: rgba(255,255,255,.9);
+  --shadow: 0 16px 36px -16px rgba(30,41,59,.25); --dot: rgba(15,23,42,.085);
+  --orb-k: .6; --glow-k: .4; --on-a: #ffffff; --scrim: rgba(15,23,42,.45);
+  --code-bg: rgba(15,23,42,.045); --code-text: #1f2a3c;
+  --ok: 22 163 74; --warn: 217 119 6; --danger: 225 29 56; --off: 100 116 139; --amber: 180 95 6;
+}
+:root[data-accent="green"]  { --a: 52 226 122; }
+:root[data-accent="cyan"]   { --a: 34 211 238; }
+:root[data-accent="violet"] { --a: 167 139 250; }
+:root[data-theme="light"][data-accent="green"]  { --a: 22 163 74; }
+:root[data-theme="light"][data-accent="cyan"]   { --a: 8 145 178; }
+:root[data-theme="light"][data-accent="violet"] { --a: 124 58 237; }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0; font-family: var(--font); color: var(--text); background: var(--bg);
+  -webkit-font-smoothing: antialiased; overflow-x: hidden;
+}
+h1, h2, h3, h4 { font-weight: 800; letter-spacing: -.3px; line-height: 1.18; margin: 0; }
+p { line-height: 1.68; color: var(--text); margin: 0 0 14px; }
+p.lead { font-size: 17px; color: var(--muted); }
+a { color: rgb(var(--a)); text-decoration: none; }
+a:hover { text-decoration: underline; }
+strong { font-weight: 700; }
+ul.plain, ol.plain { margin: 0; padding: 0; list-style: none; }
+::selection { background: rgb(var(--a) / .3); }
+button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a:focus-visible, [contenteditable]:focus-visible, [tabindex]:focus-visible { outline: 2px solid rgb(var(--a)); outline-offset: 3px; border-radius: 4px; }
+svg.ic { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* Fondo con profundidad, igual que la app */
+.bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; background: radial-gradient(120% 70% at 50% -10%, var(--bg-2), var(--bg) 62%); }
+.bg-grid { position: absolute; inset: -40px; background-image: radial-gradient(circle at center, var(--dot) 1.1px, transparent 1.7px); background-size: 26px 26px; -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 20%, #000 20%, transparent 80%); mask-image: radial-gradient(ellipse 80% 60% at 50% 20%, #000 20%, transparent 80%); }
+.bg-orb { position: absolute; width: 70vmax; height: 70vmax; border-radius: 50%; opacity: var(--orb-k); }
+.bg-orb.o1 { left: -30vmax; top: -34vmax; background: radial-gradient(closest-side, rgb(var(--a) / .12), transparent 72%); }
+.bg-orb.o2 { right: -32vmax; top: 40vmax; background: radial-gradient(closest-side, rgba(56,140,248,.1), transparent 72%); }
+
+.card { background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--r-lg); box-shadow: var(--shadow), inset 0 1px 0 var(--glass-hi); -webkit-backdrop-filter: blur(16px) saturate(140%); backdrop-filter: blur(16px) saturate(140%); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .card { background: var(--glass-strong); } }
+
+/* Animación de aparición al hacer scroll, igual filosofía que .reveal en la app */
+.reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s var(--ease), transform .8s var(--ease); }
+.reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
+
+/* =====================================================================
+   2. BARRA DE PROGRESO + NAVEGACIÓN
+   ===================================================================== */
+.progress-rail { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 60; background: var(--faint); }
+.progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, rgb(var(--a)), rgba(56,140,248,.9)); box-shadow: 0 0 10px rgb(var(--a) / .6); transition: width .08s linear; }
+
+.topbar { position: fixed; top: 3px; left: 0; right: 0; z-index: 55; display: flex; align-items: center; gap: 10px; padding: 10px 14px; }
+.topbar-inner { margin: 0 auto; max-width: 1180px; width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 16px; }
+.tb-brand { display: flex; align-items: center; gap: 9px; font-weight: 750; font-size: 14.5px; white-space: nowrap; }
+.tb-mark { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; background: linear-gradient(150deg, rgb(var(--a)), rgb(var(--a) / .6)); color: var(--on-a); flex: none; }
+.tb-mark svg { width: 19px; }
+.tb-brand small { font-weight: 500; color: var(--muted); display: block; font-size: 10.5px; }
+.tb-spacer { flex: 1; }
+.tb-progress-label { font: 600 11.5px var(--mono); color: var(--muted); white-space: nowrap; display: none; }
+@media (min-width: 640px) { .tb-progress-label { display: inline; } }
+.tb-btn { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; background: var(--faint); border: 1px solid var(--line); color: var(--muted); transition: transform .2s var(--ease), color .2s; }
+.tb-btn:hover { color: var(--text); } .tb-btn:active { transform: scale(.92); }
+.tb-btn.only-mobile { display: grid; } @media (min-width: 980px) { .tb-btn.only-mobile { display: none; } }
+
+/* Sidebar / TOC */
+.toc-drawer-scrim { position: fixed; inset: 0; background: var(--scrim); opacity: 0; pointer-events: none; z-index: 58; transition: opacity .35s var(--ease); }
+.toc-drawer-scrim.on { opacity: 1; pointer-events: auto; }
+.toc {
+  position: fixed; z-index: 59; top: 0; bottom: 0; left: 0; width: min(300px, 84vw);
+  padding: 76px 14px 20px; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: var(--glass-strong); border-right: 1px solid var(--glass-border);
+  transform: translateX(-100%); transition: transform .4s var(--ease);
+}
+.toc.on { transform: none; }
+/* En escritorio el índice vive en .toc-desk (columna fija); este cajón es solo para móvil */
+@media (min-width: 980px) { .toc { display: none; } }
+.toc-title { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 0 10px 10px; }
+.toc-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 11px; font-size: 13.5px; font-weight: 600; color: var(--muted); transition: background-color .25s, color .25s; }
+.toc-item:hover { color: var(--text); background: var(--faint); text-decoration: none; }
+.toc-item.active { color: var(--text); background: rgb(var(--a) / .12); }
+.toc-num { width: 20px; height: 20px; flex: none; border-radius: 50%; display: grid; place-items: center; font: 700 10.5px var(--mono); background: var(--faint-2); color: var(--muted); }
+.toc-item.active .toc-num { background: rgb(var(--a)); color: var(--on-a); }
+.toc-check { margin-left: auto; width: 15px; height: 15px; color: rgb(var(--ok)); opacity: 0; transform: scale(.5); transition: opacity .3s var(--ease), transform .3s var(--ease); }
+.toc-item.visited .toc-check { opacity: 1; transform: none; }
+.toc-sep { height: 1px; background: var(--line); margin: 10px 6px; }
+
+/* =====================================================================
+   3. LAYOUT GENERAL
+   ===================================================================== */
+.layout { display: grid; grid-template-columns: 1fr; max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+@media (min-width: 980px) { .layout { grid-template-columns: 272px minmax(0,1fr); gap: 36px; align-items: start; } }
+.toc-desk { display: none; } @media (min-width: 980px) { .toc-desk { display: block; position: sticky; top: 86px; max-height: calc(100vh - 110px); overflow-y: auto; } }
+main { min-width: 0; padding-top: 86px; padding-bottom: 60px; }
+
+/* =====================================================================
+   4. PORTADA
+   ===================================================================== */
+.cover { position: relative; padding: 18px 6px 50px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 22px; }
+.cover-badges { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 99px; background: var(--faint); border: 1px solid var(--line); font-size: 11.5px; font-weight: 650; color: var(--muted); }
+.pill svg { width: 13px; height: 13px; }
+.cover-logo { width: 84px; }
+.cover h1 { font-size: clamp(30px, 6.4vw, 50px); max-width: 16ch; }
+.cover .accent-word { background: linear-gradient(120deg, rgb(var(--a)), rgba(56,140,248,1)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.cover p.lead { max-width: 46ch; font-size: clamp(15px, 2.6vw, 18px); }
+
+.cover-meta { width: 100%; max-width: 560px; padding: 6px; }
+.meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border-radius: var(--r-md); overflow: hidden; }
+.meta-cell { background: var(--glass-strong); padding: 13px 15px; text-align: left; }
+.meta-cell label { display: block; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.meta-cell [contenteditable] { font-size: 14px; font-weight: 650; border-bottom: 1px dashed var(--line); padding-bottom: 2px; cursor: text; outline: none; }
+.meta-cell [contenteditable]:hover, .meta-cell [contenteditable]:focus { border-color: rgb(var(--a)); }
+.meta-cell [contenteditable]:empty::before { content: attr(data-placeholder); color: var(--muted); font-weight: 500; }
+.meta-hint { font-size: 10.5px; color: var(--muted); opacity: .75; margin-top: 10px; display: flex; align-items: center; gap: 6px; justify-content: center; }
+.meta-hint svg { width: 12px; height: 12px; }
+
+.cover-cta { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.btn { height: 46px; padding: 0 20px; border-radius: 14px; font-size: 14.5px; font-weight: 650; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform .2s var(--ease), background-color .25s; border: 1px solid transparent; }
+.btn:active { transform: scale(.96); }
+.btn.primary { color: var(--on-a); background: linear-gradient(180deg, rgb(var(--a)), rgb(var(--a) / .82)); box-shadow: 0 10px 24px -10px rgb(var(--a) / calc(.85 * var(--glow-k))), inset 0 1px 0 rgba(255,255,255,.35); }
+.btn.ghost { background: var(--faint); border-color: var(--line); }
+.btn svg { width: 17px; height: 17px; }
+.scroll-cue { margin-top: 6px; display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--muted); font-size: 10.5px; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; animation: bob 2.2s var(--ease-io) infinite; }
+@keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+
+/* =====================================================================
+   5. SECCIONES
+   ===================================================================== */
+section.sec { padding: 56px 2px 10px; scroll-margin-top: 90px; border-top: 1px solid var(--line); }
+section.sec:first-of-type { border-top: 0; }
+.sec-head { margin-bottom: 26px; }
+.sec-kicker { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.sec-kicker .toc-num { width: 26px; height: 26px; font-size: 12px; background: rgb(var(--a) / .15); color: rgb(var(--a)); }
+.sec-kicker span { font-size: 11.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.sec-kicker .readtime { margin-left: auto; font: 600 11px var(--mono); color: var(--muted); opacity: .8; display: flex; align-items: center; gap: 5px; }
+.sec-kicker .readtime svg { width: 12px; height: 12px; }
+h2.sec-title { font-size: clamp(22px, 4vw, 30px); max-width: 30ch; }
+.sec-body { max-width: var(--content-w); }
+.sec-body h3 { font-size: 18px; margin: 28px 0 10px; }
+.sec-body h3:first-child { margin-top: 0; }
+
+.grid-2 { display: grid; gap: 14px; grid-template-columns: 1fr; } @media (min-width: 640px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+.info-card { padding: 18px 19px; }
+.info-card .ic-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.info-card .ic-icon { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: rgb(var(--a) / .13); color: rgb(var(--a)); flex: none; }
+.info-card h4 { font-size: 14.5px; }
+.info-card p { font-size: 13.5px; color: var(--muted); margin: 0; }
+
+/* Checklist de objetivos */
+.obj-list { display: flex; flex-direction: column; gap: 10px; }
+.obj-item { display: flex; align-items: flex-start; gap: 12px; padding: 13px 15px; }
+.obj-check { width: 24px; height: 24px; flex: none; border-radius: 50%; border: 2px solid rgb(var(--a) / .4); display: grid; place-items: center; color: rgb(var(--a)); margin-top: 1px; }
+.obj-check svg { width: 13px; height: 13px; opacity: 0; transform: scale(.4); transition: opacity .35s var(--ease) .1s, transform .35s var(--ease) .1s; }
+.obj-item.in .obj-check { background: rgb(var(--a) / .16); }
+.obj-item.in .obj-check svg { opacity: 1; transform: none; }
+.obj-item b { display: block; font-size: 14.5px; margin-bottom: 2px; }
+.obj-item p { margin: 0; font-size: 13px; color: var(--muted); }
+.obj-general { padding: 18px 20px; margin-bottom: 16px; border-left: 3px solid rgb(var(--a)); }
+
+/* Diagrama de arquitectura */
+.diagram-card { padding: 20px; }
+.diagram-svg { width: 100%; height: auto; display: block; }
+.dg-node { cursor: pointer; }
+.dg-node rect, .dg-node circle { transition: fill .25s, stroke .25s, filter .25s; }
+.dg-node .dg-box { fill: var(--faint); stroke: var(--line); stroke-width: 1.5; }
+.dg-node.active .dg-box { stroke: rgb(var(--a)); fill: rgb(var(--a) / .12); }
+.dg-node text { fill: var(--text); font-family: var(--font); font-weight: 700; }
+.dg-node .dg-sub { fill: var(--muted); font-weight: 500; }
+.dg-link { stroke: var(--line); stroke-width: 2; fill: none; }
+.dg-link-label { fill: var(--muted); font: 600 10px var(--mono); }
+.dg-pulse { opacity: 0; }
+.diagram-detail { margin-top: 14px; padding: 14px 16px; border-radius: var(--r-md); background: var(--faint); border: 1px solid var(--line); min-height: 64px; }
+.diagram-detail b { display: block; font-size: 13.5px; margin-bottom: 3px; color: rgb(var(--a)); }
+.diagram-detail p { margin: 0; font-size: 13px; color: var(--muted); }
+.diagram-hint { text-align: center; font-size: 11.5px; color: var(--muted); margin-top: 10px; opacity: .8; }
+
+/* Visor de código */
+.code-card { border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--line); margin: 14px 0 20px; background: var(--code-bg); }
+.code-card summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 11px 14px; font: 600 12.5px var(--mono); color: var(--muted); user-select: none; }
+.code-card summary::-webkit-details-marker { display: none; }
+.code-card summary .chev { margin-left: auto; width: 15px; height: 15px; transition: transform .3s var(--ease); }
+.code-card[open] summary .chev { transform: rotate(90deg); }
+.code-card summary .copy-btn { display: flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 8px; background: var(--faint-2); font: 600 11px var(--mono); color: var(--muted); }
+.code-card summary .copy-btn:hover { color: var(--text); }
+.code-card summary .copy-btn svg { width: 12px; height: 12px; }
+.code-card pre { margin: 0; padding: 4px 16px 16px; overflow-x: auto; font: 500 12.5px/1.65 var(--mono); color: var(--code-text); -webkit-overflow-scrolling: touch; }
+.code-card .k { color: #8a6fe8; } :root[data-theme="dark"] .code-card .k { color: #c4a9ff; }
+.code-card .f { color: #0b84c9; } :root[data-theme="dark"] .code-card .f { color: #7cd3ff; }
+.code-card .s { color: #9a6500; } :root[data-theme="dark"] .code-card .s { color: #ffd479; }
+.code-card .c { color: var(--muted); font-style: italic; }
+
+/* Tabla de comandos */
+.table-wrap { overflow-x: auto; border-radius: var(--r-md); border: 1px solid var(--line); margin: 14px 0 20px; }
+table.cmds { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 480px; }
+table.cmds th { text-align: left; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 10px 14px; background: var(--faint); border-bottom: 1px solid var(--line); }
+table.cmds td { padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.cmds tr:last-child td { border-bottom: 0; }
+table.cmds code { font: 600 12.5px var(--mono); padding: 2px 7px; border-radius: 6px; background: rgb(var(--a) / .12); color: rgb(var(--a)); }
+
+/* Simulador BLE interactivo */
+.sim-card { padding: 20px; }
+.sim-grid { display: grid; gap: 20px; grid-template-columns: 1fr; }
+@media (min-width: 760px) { .sim-grid { grid-template-columns: 220px 1fr; } }
+.sim-pad { display: grid; place-items: center; }
+.mini-pad { position: relative; width: 168px; height: 168px; display: grid; grid-template-columns: repeat(3,1fr); grid-template-rows: repeat(3,1fr); grid-template-areas: ". up ." "left stop right" ". down ."; }
+.mini-pad::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--faint); border: 1px solid var(--line); }
+.mp-btn { position: relative; margin: 7%; border-radius: 14px; background: var(--faint-2); border: 1px solid var(--line); display: grid; place-items: center; color: var(--muted); transition: transform .15s var(--ease), color .15s, border-color .15s, background-color .15s; }
+.mp-btn.up { grid-area: up; } .mp-btn.down { grid-area: down; } .mp-btn.left { grid-area: left; } .mp-btn.right { grid-area: right; }
+.mp-btn svg { width: 19px; height: 19px; }
+.mp-btn.active, .mp-btn:active { transform: scale(.9); color: rgb(var(--a)); border-color: rgb(var(--a) / .5); background: rgb(var(--a) / .15); }
+.mp-stop { grid-area: stop; place-self: center; width: 76%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 40% 30%, #ff7884, #e32a46); color: #fff; display: grid; place-items: center; font: 800 9px var(--mono); letter-spacing: .08em; transition: transform .15s var(--ease); box-shadow: 0 8px 18px -8px rgba(227,42,70,.6); }
+.mp-stop:active { transform: scale(.9); }
+.sim-speed { display: flex; align-items: center; gap: 10px; margin-top: 16px; width: 168px; }
+.sim-speed input[type=range] { flex: 1; accent-color: rgb(var(--a)); }
+.sim-speed b { font: 700 13px var(--mono); width: 28px; text-align: right; }
+.sim-extras { display: flex; gap: 8px; margin-top: 10px; }
+.sim-xbtn { flex: 1; padding: 8px 4px; border-radius: 11px; background: var(--faint-2); border: 1px solid var(--line); font-size: 10.5px; font-weight: 650; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 4px; transition: color .2s, border-color .2s; }
+.sim-xbtn svg { width: 16px; height: 16px; }
+.sim-xbtn.on { color: rgb(var(--a)); border-color: rgb(var(--a) / .45); }
+
+.sim-right { min-width: 0; display: flex; flex-direction: column; }
+.sim-diagram { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 10px 4px 18px; }
+.sim-node { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 650; color: var(--muted); }
+.sim-node .dot { width: 40px; height: 40px; border-radius: 12px; background: var(--faint); border: 1px solid var(--line); display: grid; place-items: center; color: var(--muted); transition: color .3s, border-color .3s, background-color .3s, box-shadow .3s; }
+.sim-node .dot svg { width: 20px; height: 20px; }
+.sim-node.pulse .dot { color: rgb(var(--a)); border-color: rgb(var(--a) / .55); background: rgb(var(--a) / .16); box-shadow: 0 0 18px rgb(var(--a) / .35); }
+.sim-wire { flex: 1; height: 2px; background: var(--line); position: relative; margin-top: -18px; min-width: 20px; }
+.sim-wire i { position: absolute; top: 50%; left: 0; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: rgb(var(--a)); opacity: 0; box-shadow: 0 0 8px rgb(var(--a)); }
+.sim-log { flex: 1; min-height: 150px; max-height: 220px; overflow-y: auto; border-radius: var(--r-md); background: var(--code-bg); border: 1px solid var(--line); padding: 10px 12px; font: 500 12px/1.7 var(--mono); color: var(--code-text); }
+.sim-log .row { display: flex; gap: 8px; opacity: 0; animation: logIn .35s var(--ease) forwards; }
+@keyframes logIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.sim-log .row .t { color: var(--muted); flex: none; }
+.sim-log .row .cmd { color: rgb(var(--a)); font-weight: 650; }
+.sim-log .empty { color: var(--muted); opacity: .7; }
+.sim-clear { align-self: flex-start; margin-top: 8px; font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+.sim-clear svg { width: 12px; height: 12px; }
+.sim-clear:hover { color: var(--text); }
+
+/* Mini reproducción de la intro */
+.intro-demo-card { padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.intro-demo-box { position: relative; width: 100%; max-width: 360px; aspect-ratio: 16/10; border-radius: var(--r-md); overflow: hidden; background: radial-gradient(90% 70% at 50% 40%, #0c1828, #050a12); display: grid; place-items: center; }
+.intro-demo-box svg { width: 92px; opacity: 0; will-change: transform, opacity; }
+.intro-demo-box canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.intro-demo-hint { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(255,255,255,.5); font-size: 12px; font-weight: 600; pointer-events: none; transition: opacity .3s; }
+
+/* Tarjetas de pruebas / estadísticas */
+.stat-grid { display: grid; gap: 12px; grid-template-columns: repeat(2,1fr); } @media (min-width: 700px) { .stat-grid { grid-template-columns: repeat(4,1fr); } }
+.stat-card { padding: 16px 14px; text-align: center; }
+.stat-card b { display: block; font-size: 26px; font-weight: 800; color: rgb(var(--a)); font-variant-numeric: tabular-nums; }
+.stat-card span { font-size: 11px; color: var(--muted); font-weight: 600; }
+.test-list { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.test-item { display: flex; gap: 12px; padding: 13px 15px; align-items: flex-start; }
+.test-item .ti-ic { width: 28px; height: 28px; flex: none; border-radius: 50%; display: grid; place-items: center; background: rgb(var(--ok) / .15); color: rgb(var(--ok)); }
+.test-item .ti-ic svg { width: 14px; height: 14px; }
+.test-item b { display: block; font-size: 13.5px; }
+.test-item p { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
+
+/* Galería + lightbox */
+.gallery { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; } @media (min-width: 640px) { .gallery { grid-template-columns: repeat(3,1fr); } }
+.gallery figure { margin: 0; border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--line); cursor: zoom-in; position: relative; background: var(--faint); }
+.gallery img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 4/5; display: block; transition: transform .4s var(--ease); }
+.gallery figure:hover img { transform: scale(1.04); }
+.gallery figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: 8px 10px 7px; font-size: 10.5px; font-weight: 650; color: #fff; background: linear-gradient(0deg, rgba(0,0,0,.65), transparent); }
+.lightbox { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 30px 16px; opacity: 0; pointer-events: none; transition: opacity .35s var(--ease); }
+.lightbox.on { opacity: 1; pointer-events: auto; }
+.lightbox-scrim { position: absolute; inset: 0; background: rgba(2,5,10,.86); }
+.lightbox img { position: relative; max-width: min(900px,92vw); max-height: 86vh; border-radius: 14px; box-shadow: 0 30px 60px -20px rgba(0,0,0,.6); transform: scale(.96); transition: transform .35s var(--ease); }
+.lightbox.on img { transform: none; }
+.lightbox-close { position: absolute; top: 18px; right: 18px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,.1); color: #fff; display: grid; place-items: center; }
+
+/* Timeline de conclusiones / mejoras */
+.future-list { display: flex; flex-direction: column; gap: 10px; }
+.future-item { display: flex; gap: 12px; padding: 13px 15px; align-items: flex-start; }
+.future-item .fi-ic { width: 30px; height: 30px; flex: none; border-radius: 10px; display: grid; place-items: center; background: rgb(var(--a) / .14); color: rgb(var(--a)); }
+.future-item .fi-ic svg { width: 15px; height: 15px; }
+
+/* Quiz */
+.quiz-card { padding: 22px; }
+.quiz-progress-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.quiz-progress-wrap .bar { flex: 1; height: 6px; border-radius: 6px; background: var(--faint-2); overflow: hidden; }
+.quiz-progress-wrap .bar i { display: block; height: 100%; width: 0%; background: rgb(var(--a)); transition: width .4s var(--ease); }
+.quiz-progress-wrap span { font: 700 12px var(--mono); color: var(--muted); white-space: nowrap; }
+.quiz-q { font-size: 16.5px; font-weight: 700; margin-bottom: 16px; min-height: 48px; }
+.quiz-opts { display: flex; flex-direction: column; gap: 9px; }
+.quiz-opt { display: flex; align-items: center; gap: 12px; padding: 13px 15px; border-radius: 13px; background: var(--faint); border: 1px solid var(--line); text-align: left; font-size: 14px; font-weight: 600; transition: border-color .2s, background-color .2s, transform .15s; }
+.quiz-opt:hover:not(:disabled) { border-color: rgb(var(--a) / .5); }
+.quiz-opt:active:not(:disabled) { transform: scale(.985); }
+.quiz-opt .qo-mark { width: 22px; height: 22px; flex: none; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; font: 700 11px var(--mono); color: var(--muted); }
+.quiz-opt.correct { border-color: rgb(var(--ok) / .6); background: rgb(var(--ok) / .13); }
+.quiz-opt.correct .qo-mark { background: rgb(var(--ok)); color: var(--on-a); border-color: transparent; }
+.quiz-opt.wrong { border-color: rgb(var(--danger) / .55); background: rgb(var(--danger) / .12); }
+.quiz-opt.wrong .qo-mark { background: rgb(var(--danger)); color: #fff; border-color: transparent; }
+.quiz-opt:disabled { cursor: default; }
+.quiz-explain { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: var(--faint); font-size: 13px; color: var(--muted); opacity: 0; max-height: 0; overflow: hidden; transition: opacity .35s var(--ease), max-height .4s var(--ease), margin .35s var(--ease); }
+.quiz-explain.on { opacity: 1; max-height: 200px; margin-top: 14px; }
+.quiz-foot { display: flex; justify-content: flex-end; margin-top: 18px; }
+.quiz-result { text-align: center; padding: 10px 0; }
+.quiz-result .qr-score { font-size: 46px; font-weight: 800; color: rgb(var(--a)); font-variant-numeric: tabular-nums; }
+.quiz-result .qr-msg { font-size: 15px; font-weight: 650; margin: 6px 0 4px; }
+.quiz-result p { color: var(--muted); font-size: 13.5px; max-width: 40ch; margin: 0 auto 20px; }
+.quiz-retry-wrap { display: flex; justify-content: center; }
+
+/* Biblio + anexo */
+.biblio-list { display: flex; flex-direction: column; gap: 2px; }
+.biblio-item { display: flex; gap: 12px; padding: 13px 4px; border-bottom: 1px solid var(--line); align-items: flex-start; }
+.biblio-item:last-child { border-bottom: 0; }
+.biblio-item .bi-n { font: 700 12px var(--mono); color: var(--muted); width: 22px; flex: none; }
+.biblio-item a { font-weight: 650; }
+.biblio-item p { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
+
+footer.page-foot { max-width: var(--content-w); margin-top: 50px; padding: 26px 2px 10px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+footer.page-foot a { color: var(--muted); font-weight: 650; }
+footer.page-foot .fs { flex: 1; }
+
+/* Botón volver arriba */
+.fab-top { position: fixed; right: 18px; bottom: 18px; z-index: 50; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: var(--glass-strong); border: 1px solid var(--glass-border); box-shadow: var(--shadow); color: var(--text); opacity: 0; transform: translateY(10px) scale(.9); pointer-events: none; transition: opacity .3s var(--ease), transform .3s var(--ease); }
+.fab-top.on { opacity: 1; transform: none; pointer-events: auto; }
+.fab-top svg { width: 19px; height: 19px; }
+
+@media print {
+  .topbar, .toc-desk, .toc, .progress-rail, .fab-top, .toc-drawer-scrim, .sim-card .copy-btn { display: none !important; }
+  /* Fuerza la paleta clara en los TOKENS (no solo en <body>): si la página estaba en
+     tema oscuro, los textos usan var(--text)/var(--muted) casi blancos, que sobre el
+     fondo blanco del papel serían invisibles. */
+  /* !important hace falta: si la página está en tema oscuro, la regla
+     :root[data-theme="dark"]{...} tiene más especificidad que este :root a secas. */
+  :root { --bg: #fff !important; --text: #0e1726 !important; --muted: #475569 !important; --line: #d8dee8 !important; --faint: #f1f4f8 !important; --a: 22 163 74 !important; }
+  body { background: #fff; color: #0e1726; }
+  .bg { display: none; }
+  main { padding-top: 0; }
+  .layout { grid-template-columns: 1fr; max-width: none; }
+  .card { box-shadow: none; border: 1px solid #ccc; -webkit-backdrop-filter: none; backdrop-filter: none; background: #fff; }
+  section.sec { break-inside: avoid-page; }
+  /* Al imprimir se ve TODO el documento de golpe, no solo lo ya recorrido con scroll:
+     forzamos visibles los elementos que esperan su animación de aparición. */
+  .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-face" viewBox="0 0 260 160"><path d="M66 14H194A52 52 0 0 1 246 66V94A52 52 0 0 1 194 146H66A52 52 0 0 1 14 94V66A52 52 0 0 1 66 14Z" fill="none" stroke="currentColor" stroke-width="22"/><circle cx="92" cy="80" r="19" fill="currentColor"/><circle cx="168" cy="80" r="19" fill="currentColor"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></symbol>
+    <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-2M6 14h12v7H6z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
+    <symbol id="i-chip" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></symbol>
+    <symbol id="i-radio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.5 5.5a9 9 0 0 0 0 13M18.5 5.5a9 9 0 0 1 0 13"/></symbol>
+    <symbol id="i-car" viewBox="0 0 24 24"><path d="M3 13l2-5a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 5"/><path d="M3 13h18v4a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H6v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></symbol>
+    <symbol id="i-bt" viewBox="0 0 24 24"><path d="m7 7 10 10-5 5V2l5 5L7 17"/></symbol>
+    <symbol id="i-horn" viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></symbol>
+    <symbol id="i-lights" viewBox="0 0 24 24"><path d="M10 5C6.1 5 3 8.1 3 12s3.1 7 7 7h1V5h-1z"/><path d="M15 8h6M15 12h6M15 16h6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14"/></symbol>
+    <symbol id="i-lab" viewBox="0 0 24 24"><path d="M9 2v6L4 19a2 2 0 0 0 2 3h12a2 2 0 0 0 2-3L15 8V2"/><path d="M9 2h6M7 15h10"/></symbol>
+    <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M12 12 16 8"/><circle cx="12" cy="12" r="9"/><path d="M4.5 16.5A9 9 0 0 1 12 3"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></symbol>
+    <symbol id="i-rocket" viewBox="0 0 24 24"><path d="M12 2c3 1 6 4 6 9 0 3-1 6-3 8l-1-4-4 0-1 4c-2-2-3-5-3-8 0-5 3-8 6-9z"/><circle cx="12" cy="10" r="1.6"/></symbol>
+  </defs>
+</svg>
+
+<div class="bg" aria-hidden="true"><div class="bg-orb o1"></div><div class="bg-orb o2"></div><div class="bg-grid"></div></div>
+
+<div class="progress-rail"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="topbar">
+  <div class="topbar-inner card">
+    <button class="tb-btn only-mobile" id="tocToggle" aria-label="Abrir índice"><svg class="ic"><use href="#i-menu"/></svg></button>
+    <div class="tb-brand"><span class="tb-mark"><svg viewBox="0 0 260 160"><use href="#i-face"/></svg></span><span>Memoria<br><small>Seguridad Vial · micro:bit</small></span></div>
+    <div class="tb-spacer"></div>
+    <span class="tb-progress-label" id="tbProgressLabel">0% leído</span>
+    <button class="tb-btn" id="printBtn" aria-label="Imprimir / PDF"><svg class="ic"><use href="#i-print"/></svg></button>
+    <button class="tb-btn" id="themeBtn" aria-label="Cambiar tema"><svg class="ic" id="themeIcon"><use href="#i-moon"/></svg></button>
+  </div>
+</div>
+
+<div class="toc-drawer-scrim" id="tocScrim"></div>
+
+<nav class="toc" id="tocDrawer" aria-label="Índice">
+  <div class="toc-title">Índice</div>
+  <ul class="plain" id="tocList"></ul>
+</nav>
+
+<div class="layout">
+  <nav class="toc-desk" aria-label="Índice">
+    <div class="toc-title">Índice</div>
+    <ul class="plain" id="tocListDesk"></ul>
+  </nav>
+
+  <main>
+    <!-- ================= PORTADA ================= -->
+    <section class="cover" id="portada">
+      <div class="cover-badges reveal" style="--i:0">
+        <span class="pill"><svg class="ic"><use href="#i-chip"/></svg> BBC micro:bit v2</span>
+        <span class="pill"><svg class="ic"><use href="#i-radio"/></svg> Bluetooth Low Energy</span>
+        <span class="pill"><svg class="ic"><use href="#i-car"/></svg> Robot Maqueen</span>
+        <span class="pill"><svg class="ic"><use href="#i-phone"/></svg> Web Bluetooth API</span>
+      </div>
+      <span class="cover-logo reveal" style="--i:1; color: rgb(var(--a))"><svg viewBox="0 0 260 160"><use href="#i-face"/></svg></span>
+      <h1 class="reveal" style="--i:2">Seguridad Vial con <span class="accent-word">micro:bit</span></h1>
+      <p class="lead reveal" style="--i:3">Memoria del proyecto: diseño y construcción de un coche robot educativo, controlado por Bluetooth desde el móvil, para enseñar conceptos de seguridad vial y electrónica aplicada.</p>
+
+      <div class="cover-meta card reveal" style="--i:4">
+        <div class="meta-grid">
+          <div class="meta-cell"><label>Autor/a(s)</label><div contenteditable="true" data-key="autor" data-placeholder="Tu nombre"></div></div>
+          <div class="meta-cell"><label>Centro educativo</label><div contenteditable="true" data-key="centro" data-placeholder="Tu centro"></div></div>
+          <div class="meta-cell"><label>Curso</label><div contenteditable="true" data-key="curso" data-placeholder="1º/2º Bachillerato"></div></div>
+          <div class="meta-cell"><label>Asignatura</label><div contenteditable="true" data-key="asignatura" data-placeholder="Tecnología e Ingeniería"></div></div>
+          <div class="meta-cell"><label>Tutor/a</label><div contenteditable="true" data-key="tutor" data-placeholder="Nombre del profesor/a"></div></div>
+          <div class="meta-cell"><label>Curso académico</label><div contenteditable="true" data-key="anio" data-placeholder="2025 / 2026"></div></div>
+        </div>
+      </div>
+      <p class="meta-hint reveal" style="--i:5"><svg class="ic"><use href="#i-check"/></svg> Toca los campos para rellenarlos — se guardan en este navegador automáticamente.</p>
+
+      <div class="cover-cta reveal" style="--i:6">
+        <a href="#introduccion" class="btn primary">Empezar a leer <svg class="ic"><use href="#i-arrow"/></svg></a>
+        <a href="index.html" class="btn ghost"><svg class="ic"><use href="#i-phone"/></svg> Abrir la app de control</a>
+      </div>
+      <div class="scroll-cue reveal" style="--i:7">Desliza para empezar</div>
+    </section>
+
+    <!-- ================= 1. INTRODUCCIÓN ================= -->
+    <section class="sec" id="introduccion" data-title="Introducción y justificación">
+      <div class="sec-head reveal">
+        <div class="sec-kicker"><span class="toc-num">1</span><span>Introducción</span><span class="readtime" data-readtime></span></div>
+        <h2 class="sec-title">Introducción y justificación</h2>
+      </div>
+      <div class="sec-body reveal">
+        <p class="lead">La seguridad vial es uno de esos temas que todo el mundo da por sabido hasta que se para a pensarlo de verdad: frenar a tiempo, respetar la velocidad, señalizar las maniobras, reaccionar ante un obstáculo. Son automatismos que un conductor humano aprende con la práctica, pero que también se pueden <strong>explicar, programar y poner a prueba</strong> en un sistema mucho más simple: un coche robot.</p>
+        <p>Este proyecto nace de unir dos asignaturas que normalmente van por separado: la <strong>electrónica y programación por bloques</strong> (micro:bit, MakeCode, el robot Maqueen) y el <strong>desarrollo web moderno</strong> (una app que se conecta por Bluetooth directamente desde el navegador del móvil, sin instalar nada). El resultado es un sistema completo, de extremo a extremo, que se puede tocar, conducir y explicar en una presentación.</p>
+        <p>Además de ser un ejercicio técnico, el proyecto sirve como <strong>herramienta didáctica</strong>: el robot incorpora un sistema de frenado de emergencia por sensor de distancia, luces de aviso y bocina, exactamente los mismos conceptos — distancia de seguridad, señalización, reacción ante obstáculos — que se explican en la educación vial, pero aquí se pueden <em>programar, fallar, depurar y volver a probar</em>, que es como de verdad se interioriza un concepto técnico.</p>
+        <div class="grid-2" style="margin-top:22px">
+          <div class="info-card card"><div class="ic-head"><span class="ic-icon"><svg class="ic"><use href="#i-lab"/></svg></span><h4>Por qué STEM</h4></div><p>Combina electrónica, programación por bloques, programación web, física del movimiento y diseño de interfaces en un único proyecto con un resultado tangible: un coche que de verdad se mueve.</p></div>
+          <div class="info-card card"><div class="ic-head"><span class="ic-icon"><svg class="ic"><use href="#i-shield"/></svg></span><h4>Por qué seguridad vial</h4></div><p>Traduce normas de circulación (frenar a tiempo, avisar, respetar la distancia) en reglas de programación concretas y comprobables en el propio robot.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 2. OBJETIVOS ================= -->
+    <section class="sec" id="objetivos" data-title="Objetivos">
+      <div class="sec-head reveal">
+        <div class="sec-kicker"><span class="toc-num">2</span><span>Objetivos</span><span class="readtime" data-readtime></span></div>
+        <h2 class="sec-title">Qué se quiere conseguir</h2>
+      </div>
+      <div class="sec-body reveal">
+        <div class="card obj-general"><p style="margin:0"><strong>Objetivo general:</strong> diseñar y construir un sistema completo — hardware y software — que permita controlar de forma remota un vehículo robótico educativo mediante Bluetooth de baja energía, aplicando conceptos de comunicación inalámbrica, programación por bloques y desarrollo web, mientras se refuerzan nociones de seguridad vial.</p></div>
+        <ul class="plain obj-list" id="objList">
+          <li class="obj-item card"><span class="obj-check"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Programar el micro:bit</b><p>Que reciba órdenes de texto por Bluetooth y las traduzca en movimiento real del robot Maqueen.</p></div></li>
+          <li class="obj-item card"><span class="obj-check"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Desarrollar la app de control</b><p>Una web que se conecte por Bluetooth de baja energía (BLE) sin instalar nada, desde cualquier móvil Android compatible.</p></div></li>
+          <li class="obj-item card"><span class="obj-check"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Diseñar un protocolo fiable</b><p>Un conjunto de comandos de texto simple, fácil de depurar y de ampliar con nuevas funciones en el futuro.</p></div></li>
+          <li class="obj-item card"><span class="obj-check"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Incorporar seguridad activa</b><p>Frenado de emergencia por sensor de distancia, parada automática ante pérdida de conexión, y señalización con luces y bocina.</p></div></li>
+          <li class="obj-item card"><span class="obj-check"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Cuidar la experiencia de usuario</b><p>Una interfaz clara, atractiva y táctil, con información del estado de conexión siempre visible.</p></div></li>
+          <li class="obj-item card"><span class="obj-check"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Documentar el proceso</b><p>Dejar un registro — esta misma memoria — que permita a cualquier compañero entender, reproducir y ampliar el proyecto.</p></div></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ================= 3. MARCO TEÓRICO ================= -->
+    <section class="sec" id="teoria" data-title="Marco teórico">
+      <div class="sec-head reveal">
+        <div class="sec-kicker"><span class="toc-num">3</span><span>Marco teórico</span><span class="readtime" data-readtime></span></div>
+        <h2 class="sec-title">Las piezas que hacen falta entender</h2>
+      </div>
+      <div class="sec-body reveal">
+        <h3>3.1 · BBC micro:bit v2</h3>
+        <p>El micro:bit es una placa de desarrollo educativa del tamaño de una tarjeta de crédito, con un microcontrolador ARM Cortex-M4, pantalla de 25 LEDs, botones, acelerómetro, brújula, micrófono, altavoz y, lo que nos interesa aquí, <strong>radio Bluetooth</strong>. Se programa por bloques o por texto (JavaScript/Python) desde <a href="https://makecode.microbit.org" target="_blank" rel="noopener">MakeCode</a>, lo que la hace perfecta para un proyecto de bachillerato: es asequible, muy documentada, y se integra directamente con el robot Maqueen a través de su conector de borde.</p>
+
+        <h3>3.2 · Bluetooth Low Energy y el servicio UART</h3>
+        <p>Un dispositivo Bluetooth Low Energy (BLE) organiza lo que puede hacer en <strong>servicios</strong>, y cada servicio en varias <strong>características</strong> (characteristics) que se pueden leer, escribir o a las que uno se puede suscribir para recibir avisos. El micro:bit implementa el <em>Nordic UART Service</em>, que imita un cable serie clásico sobre Bluetooth: todo lo que la app "escribe" en una característica, el micro:bit lo recibe como si llegara por un cable, carácter a carácter.</p>
+        <div class="card diagram-card">
+          <svg class="diagram-svg" viewBox="0 0 640 220" id="archDiagram" role="img" aria-label="Diagrama de la arquitectura: móvil, micro:bit y Maqueen">
+            <defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="var(--line)"/></marker></defs>
+            <path class="dg-link" d="M150 110 H 300" marker-end="url(#arrow)"/>
+            <path class="dg-link" d="M150 110 H 300" marker-start="url(#arrow)" transform="translate(0,14)" opacity=".5"/>
+            <text class="dg-link-label" x="225" y="96" text-anchor="middle">BLE · UART</text>
+            <path class="dg-link" d="M420 110 H 500" marker-end="url(#arrow)"/>
+            <text class="dg-link-label" x="460" y="96" text-anchor="middle">I2C</text>
+
+            <g class="dg-node" data-key="movil" tabindex="0" role="button" aria-label="Móvil">
+              <rect class="dg-box" x="20" y="60" width="130" height="100" rx="16"/>
+              <text x="85" y="100" text-anchor="middle" font-size="13">Móvil</text>
+              <text class="dg-sub" x="85" y="118" text-anchor="middle" font-size="10">Chrome</text>
+            </g>
+            <g class="dg-node" data-key="microbit" tabindex="0" role="button" aria-label="micro:bit">
+              <rect class="dg-box" x="300" y="55" width="120" height="110" rx="16"/>
+              <text x="360" y="100" text-anchor="middle" font-size="13">micro:bit</text>
+              <text class="dg-sub" x="360" y="118" text-anchor="middle" font-size="10">UART · GATT</text>
+            </g>
+            <g class="dg-node" data-key="maqueen" tabindex="0" role="button" aria-label="Maqueen">
+              <rect class="dg-box" x="500" y="40" width="120" height="140" rx="16"/>
+              <text x="560" y="90" text-anchor="middle" font-size="13">Maqueen</text>
+              <text class="dg-sub" x="560" y="107" text-anchor="middle" font-size="10">Motores</text>
+              <text class="dg-sub" x="560" y="121" text-anchor="middle" font-size="10">Ultrasonidos</text>
+              <text class="dg-sub" x="560" y="135" text-anchor="middle" font-size="10">LEDs</text>
+            </g>
+          </svg>
+          <div class="diagram-detail" id="diagramDetail"><b>Toca un bloque</b><p>Pulsa sobre el móvil, el micro:bit o el Maqueen para ver qué hace cada parte del sistema.</p></div>
+          <p class="diagram-hint">Arquitectura general del sistema de comunicación</p>
+        </div>
+
+        <p style="margin-top:18px">Un detalle real que apareció durante el desarrollo, y que merece la pena contar: según el estándar genérico de Nordic, la característica <code style="font:600 13px var(--mono); color:rgb(var(--a))">6e400002</code> debería ser para escribir y la <code style="font:600 13px var(--mono); color:rgb(var(--a))">6e400003</code> para recibir. <strong>En el micro:bit real es justo al revés.</strong> La app no se fía del UUID fijo: pide las dos características y elige por sus <em>propiedades</em> (la que admite escritura es la buena), así funciona pase lo que pase. Es un buen ejemplo de por qué, en electrónica, hay que verificar el comportamiento real del hardware y no solo confiar en la documentación genérica.</p>
+
+        <h3>3.3 · Robot Maqueen (DFRobot)</h3>
+        <p>El Maqueen es un chasis robótico pensado para el micro:bit: dos motores independientes (uno por rueda), un sensor ultrasónico de distancia, dos LEDs auxiliares y sensores de seguimiento de línea. El micro:bit se conecta a él por el conector de borde y le habla por <strong>I2C</strong>, un protocolo de comunicación de corta distancia muy habitual entre microcontroladores y periféricos.</p>
+
+        <h3>3.4 · Web Bluetooth API</h3>
+        <p>Es la API que permite que una página web, con JavaScript normal, se conecte directamente a un dispositivo Bluetooth cercano — sin aplicaciones nativas, sin instalar nada. Por motivos de seguridad y privacidad, solo funciona en páginas servidas por <strong>HTTPS</strong> (o en <code style="font:600 13px var(--mono)">localhost</code>) y solo se puede iniciar la búsqueda de dispositivos tras una acción directa de la persona usuaria, como pulsar un botón. Es compatible con Chrome y Edge en Android, Windows, macOS y ChromeOS; Safari (iPhone/iPad) no la soporta.</p>
+      </div>
+    </section>
+
+    <!-- ================= 4. ARQUITECTURA ================= -->
+    <section class="sec" id="arquitectura" data-title="Arquitectura del sistema">
+      <div class="sec-head reveal">
+        <div class="sec-kicker"><span class="toc-num">4</span><span>Arquitectura</span><span class="readtime" data-readtime></span></div>
+        <h2 class="sec-title">Cómo viaja una orden desde el dedo hasta la rueda</h2>
+      </div>
+      <div class="sec-body reveal">
+        <p>Cuando se pulsa "Avanzar" en la app, ocurre esta secuencia, de principio a fin:</p>
+        <div class="test-list">
+          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>1. El móvil escribe el comando</b><p>La app codifica el texto <code>"avanzar\n"</code> en UTF-8 y lo escribe en la característica Bluetooth del micro:bit que admite escritura.</p></div></div>
+          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>2. El micro:bit detecta el salto de línea</b><p>Su programa está escuchando el servicio UART; en cuanto ve el <code>\n</code>, da por terminado el comando y lo compara con los que conoce.</p></div></div>
+          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>3. Llama al bloque de Maqueen correspondiente</b><p>Para "avanzar", ejecuta <code>motorRun</code> en ambas ruedas hacia delante, a la velocidad guardada.</p></div></div>
+          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>4. El Maqueen mueve los motores</b><p>Todo esto ocurre en milisegundos: el retardo percibido entre pulsar y que el coche se mueva es casi instantáneo.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 5. PROGRAMACIÓN DEL MICRO:BIT ================= -->
+    <section class="sec" id="microbit" data-title="Programación del micro:bit">
+      <div class="sec-head reveal">
+        <div class="sec-kicker"><span class="toc-num">5</span><span>MakeCode</span><span class="readtime" data-readtime></span></div>
+        <h2 class="sec-title">Programación del micro:bit</h2>
+      </div>
+      <div class="sec-body reveal">
+        <p>El micro:bit se programa en <a href="https://makecode.microbit.org" target="_blank" rel="noopener">MakeCode</a> con dos extensiones añadidas: <strong>Bluetooth</strong> (built-in) y <strong>Maqueen</strong> (de DFRobot). La lógica se reparte en tres bloques de evento:</p>
+        <ul class="plain" style="display:flex;flex-direction:column;gap:8px;margin:16px 0">
+          <li>· <strong>Al iniciar</strong> — arranca el servicio UART y deja el coche parado y las luces apagadas.</li>
+          <li>· <strong>Al recibir datos UART</strong> — lee el texto hasta el salto de línea y decide qué hacer según el comando.</li>
+          <li>· <strong>Por siempre</strong> — vigila el sensor ultrasónico y frena solo si el modo "seguridad" está activo.</li>
+        </ul>
+        <p>La tabla de comandos que entiende el programa es exactamente la misma que envía la app:</p>
+        <div class="table-wrap"><table class="cmds">
+          <thead><tr><th>Comando</th><th>Cuándo se envía</th></tr></thead>
+          <tbody>
+            <tr><td><code>avanzar</code></td><td>Flecha ↑ pulsada</td></tr>
+            <tr><td><code>atras</code></td><td>Flecha ↓ pulsada</td></tr>
+            <tr><td><code>izquierda</code></td><td>Flecha ← pulsada</td></tr>
+            <tr><td><code>derecha</code></td><td>Flecha → pulsada</td></tr>
+            <tr><td><code>parar</code></td><td>Al soltar, pulsar PARAR, conectar o desconectar</td></tr>
+            <tr><td><code>vel0</code> … <code>vel100</code></td><td>Al mover el deslizador de velocidad</td></tr>
+            <tr><td><code>bocina</code></td><td>Botón Bocina</td></tr>
+            <tr><td><code>luces</code></td><td>Botón Luces (alterna ON/OFF)</td></tr>
+            <tr><td><code>seguridad</code></td><td>Botón Seguridad (alterna el frenado automático)</td></tr>
+          </tbody>
+        </table></div>
+
+        <details class="code-card">
+          <summary>main.ts — programa completo del micro:bit <span class="copy-btn" data-copy="code-microbit"><svg class="ic"><use href="#i-copy"/></svg>Copiar</span><svg class="ic chev"><use href="#i-arrow"/></svg></summary>
+          <pre id="code-microbit"><code>let velocidad = 60
+let movimiento = "parar"
+let seguridadOn = false
+let lucesOn = false
+const DISTANCIA_MIN = 10   <span class="c">// cm — distancia de frenada</span>
+
+bluetooth.onUartDataReceived(serial.delimiters(Delimiters.NewLine), function () {
+    let cmd = bluetooth.uartReadUntil(serial.delimiters(Delimiters.NewLine)).trim()
+    <span class="k">if</span> (cmd == <span class="s">"avanzar"</span>) { movimiento = <span class="s">"avanzar"</span>; <span class="f">maqueen.motorRun</span>(maqueen.Motors.All, maqueen.Dir.CW, velocidad * 255 / 100) }
+    <span class="k">else if</span> (cmd == <span class="s">"parar"</span>) { movimiento = <span class="s">"parar"</span>; <span class="f">maqueen.motorStop</span>(maqueen.Motors.All) }
+    <span class="k">else if</span> (cmd.substr(0, 3) == <span class="s">"vel"</span>) { velocidad = parseFloat(cmd.substr(3)) }
+    <span class="k">else if</span> (cmd == <span class="s">"seguridad"</span>) { seguridadOn = !seguridadOn }
+    <span class="c">// ... atras, izquierda, derecha, bocina, luces (ver memoria completa en el repositorio)</span>
+})
+
+basic.forever(function () {
+    <span class="k">if</span> (seguridadOn && movimiento == <span class="s">"avanzar"</span> && <span class="f">maqueen.Ultrasonic</span>() &lt; DISTANCIA_MIN) {
+        <span class="f">maqueen.motorStop</span>(maqueen.Motors.All)
+        movimiento = <span class="s">"parar"</span>
+    }
+})
+
+bluetooth.onBluetoothDisconnected(function () { <span class="f">maqueen.motorStop</span>(maqueen.Motors.All) })
+bluetooth.startUartService()</code></pre>
+        </details>
+        <p style="font-size:12.5px;color:var(--muted)">⚠️ Ajuste imprescindible: en MakeCode, icono ⚙️ → <em>Configuración del proyecto</em> → activar <strong>"No se requiere emparejamiento"</strong>, para que el móvil conecte sin pedir un código.</p>
+      </div>
+    </section>
+
+    <!-- ================= 6. LA APP DE CONTROL ================= -->
+    <section class="sec" id="app" data-title="La app de control">
+      <div class="sec-head reveal">
+        <div class="sec-kicker"><span class="toc-num">6</span><span>La app</span><span class="readtime" data-readtime></span></div>
+        <h2 class="sec-title">La app de control</h2>
+      </div>
+      <div class="sec-body reveal">
+        <p>La app (<code style="font:600 13px var(--mono)">index.html</code>) es un único archivo autocontenido — HTML, CSS y JavaScript, sin frameworks — pensado para abrirse con doble clic o publicarse en GitHub Pages. Se organiza en una clase <code style="font:600 13px var(--mono)">MicrobitUART</code> que gestiona toda la conexión Bluetooth, y una capa de interfaz con animaciones premium: glassmorphism, controles con profundidad 3D, y una intro animada de unos 5 segundos.</p>
+
+        <h3>Prueba el protocolo tú mismo</h3>
+        <p>Este panel es una <strong>simulación</strong>: no usa Bluetooth real, pero genera exactamente el mismo texto que la app de verdad manda al micro:bit. Pulsa los controles y observa el registro de comandos.</p>
+        <div class="card sim-card">
+          <div class="sim-grid">
+            <div class="sim-pad">
+              <div class="mini-pad" id="miniPad">
+                <button class="mp-btn up" data-cmd="avanzar" aria-label="Avanzar"><svg class="ic"><use href="#i-up"/></svg></button>
+                <button class="mp-btn left" data-cmd="izquierda" aria-label="Izquierda"><svg class="ic" style="transform:rotate(-90deg)"><use href="#i-up"/></svg></button>
+                <button class="mp-stop" id="miniStop">PARAR</button>
+                <button class="mp-btn right" data-cmd="derecha" aria-label="Derecha"><svg class="ic" style="transform:rotate(90deg)"><use href="#i-up"/></svg></button>
+                <button class="mp-btn down" data-cmd="atras" aria-label="Atrás"><svg class="ic" style="transform:rotate(180deg)"><use href="#i-up"/></svg></button>
+              </div>
+              <div class="sim-speed"><input type="range" id="miniSpeed" min="0" max="100" value="60"><b id="miniSpeedVal">60</b></div>
+              <div class="sim-extras">
+                <button class="sim-xbtn" id="simHorn" data-cmd="bocina"><svg class="ic"><use href="#i-horn"/></svg>Bocina</button>
+                <button class="sim-xbtn" id="simLights" data-cmd="luces"><svg class="ic"><use href="#i-lights"/></svg>Luces</button>
+                <button class="sim-xbtn" id="simSafety" data-cmd="seguridad"><svg class="ic"><use href="#i-shield"/></svg>Seguridad</button>
+              </div>
+            </div>
+            <div class="sim-right">
+              <div class="sim-diagram">
+                <div class="sim-node" id="snMovil"><span class="dot"><svg class="ic"><use href="#i-phone"/></svg></span>Móvil</div>
+                <div class="sim-wire"><i id="wireDot1"></i></div>
+                <div class="sim-node" id="snMicrobit"><span class="dot"><svg class="ic"><use href="#i-chip"/></svg></span>micro:bit</div>
+                <div class="sim-wire"><i id="wireDot2"></i></div>
+                <div class="sim-node" id="snMaqueen"><span class="dot"><svg class="ic"><use href="#i-car"/></svg></span>Maqueen</div>
+              </div>
+              <div class="sim-log" id="simLog"><div class="empty">Pulsa un control para ver el comando que se enviaría…</div></div>
+              <button class="sim-clear" id="simClear"><svg class="ic"><use href="#i-trash"/></svg>Limpiar registro</button>
+            </div>
+          </div>
+        </div>
+
+        <h3>Cómo se hizo la animación de bienvenida</h3>
+        <p>La intro (logo 3D → modo "programación" en verde → explosión de partículas) no usa vídeos ni imágenes: es <strong>SVG animado por código</strong> más un <code style="font:600 13px var(--mono)">&lt;canvas&gt;</code> para las partículas, todo coordinado por una única "línea de tiempo maestra" en <code style="font:600 13px var(--mono)">requestAnimationFrame</code>. Aquí tienes una versión reducida, en directo:</p>
+        <div class="card intro-demo-card">
+          <div class="intro-demo-box" id="introDemoBox">
+            <svg viewBox="0 0 260 160" id="demoLogoSvg" aria-hidden="true">
+              <defs>
+                <linearGradient id="dgBlue" x1="0" y1="0" x2=".2" y2="1"><stop offset="0" stop-color="#eafaff"/><stop offset=".5" stop-color="#2aa9f4"/><stop offset="1" stop-color="#1a4fd0"/></linearGradient>
+                <linearGradient id="dgGreen" x1="0" y1="0" x2=".2" y2="1"><stop offset="0" stop-color="#f0fff6"/><stop offset=".5" stop-color="#1fe372"/><stop offset="1" stop-color="#05984b"/></linearGradient>
+              </defs>
+              <g id="demoBlue"><path d="M66 14H194A52 52 0 0 1 246 66V94A52 52 0 0 1 194 146H66A52 52 0 0 1 14 94V66A52 52 0 0 1 66 14Z" fill="none" stroke="url(#dgBlue)" stroke-width="20"/><circle cx="92" cy="80" r="17" fill="url(#dgBlue)"/><circle cx="168" cy="80" r="17" fill="url(#dgBlue)"/></g>
+              <g id="demoGreen" opacity="0"><path d="M66 14H194A52 52 0 0 1 246 66V94A52 52 0 0 1 194 146H66A52 52 0 0 1 14 94V66A52 52 0 0 1 66 14Z" fill="none" stroke="url(#dgGreen)" stroke-width="20"/><circle cx="92" cy="80" r="17" fill="url(#dgGreen)"/><circle cx="168" cy="80" r="17" fill="url(#dgGreen)"/></g>
+            </svg>
+            <canvas id="demoCanvas"></canvas>
+            <div class="intro-demo-hint" id="demoHint">▶ Pulsa para reproducir</div>
+          </div>
+          <button class="btn primary" id="playIntroDemo"><svg class="ic"><use href="#i-zap"/></svg> Reproducir animación</button>
+        </div>
+
+        <h3>Técnicas de rendimiento usadas</h3>
+        <div class="grid-2">
+          <div class="info-card card"><div class="ic-head"><span class="ic-icon"><svg class="ic"><use href="#i-gauge"/></svg></span><h4>Solo transform / opacity</h4></div><p>Lo mueve la tarjeta gráfica (GPU), sin recalcular el diseño de toda la página en cada fotograma.</p></div>
+          <div class="info-card card"><div class="ic-head"><span class="ic-icon"><svg class="ic"><use href="#i-zap"/></svg></span><h4>Una sola línea de tiempo</h4></div><p>Un reloj <code style="font:600 12px var(--mono)">t</code> controla todas las fases a la vez; se puede saltar la intro sin descoordinar nada.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 7. PRUEBAS ================= -->
+    <section class="sec" id="pruebas" data-title="Pruebas realizadas">
+      <div class="sec-head reveal">
+        <div class="sec-kicker"><span class="toc-num">7</span><span>Pruebas</span><span class="readtime" data-readtime></span></div>
+        <h2 class="sec-title">Pruebas realizadas</h2>
+      </div>
+      <div class="sec-body reveal">
+        <p>Antes de probar con el coche real, la app se validó con un micro:bit <strong>simulado</strong> (se sustituye <code style="font:600 13px var(--mono)">navigator.bluetooth</code> por una versión de prueba que registra todo lo que se escribe), para comprobar el protocolo sin depender del hardware.</p>
+        <div class="stat-grid">
+          <div class="stat-card card"><b id="statTests">24/24</b><span>comprobaciones superadas</span></div>
+          <div class="stat-card card"><b>16,7 ms</b><span>tiempo medio de fotograma</span></div>
+          <div class="stat-card card"><b>0</b><span>escrituras simultáneas</span></div>
+          <div class="stat-card card"><b>4</b><span>tamaños de pantalla probados</span></div>
+        </div>
+        <div class="test-list">
+          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Protocolo Bluetooth</b><p>Filtro de nombre correcto, UUIDs válidos, comandos exactos (<code>avanzar\n</code>, <code>vel75\n</code>…), sin escrituras concurrentes, coalescencia de comandos repetidos.</p></div></div>
+          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Reconexión automática</b><p>Al simular una desconexión brusca, la app reintenta sola y, si no lo consigue, muestra un aviso con el botón "Reconectar".</p></div></div>
+          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>"Hombre muerto"</b><p>Si la app pasa a segundo plano mientras el coche avanza, se envía <code>parar</code> automáticamente.</p></div></div>
+          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Responsive</b><p>Sin desbordamiento horizontal en móvil pequeño (360px), móvil estándar, horizontal y ordenador/proyector.</p></div></div>
+          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Rendimiento</b><p>Con la CPU limitada ×4 (para simular un móvil de gama media), la intro mantiene una mediana de 16,7 ms por fotograma — el equivalente a 60 imágenes por segundo.</p></div></div>
+          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Accesibilidad</b><p>Con "reducir movimiento" activado en el sistema operativo, la intro se acorta automáticamente y se eliminan los efectos de paralaje.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 8. RESULTADOS ================= -->
+    <section class="sec" id="resultados" data-title="Resultados">
+      <div class="sec-head reveal">
+        <div class="sec-kicker"><span class="toc-num">8</span><span>Resultados</span><span class="readtime" data-readtime></span></div>
+        <h2 class="sec-title">Resultados</h2>
+      </div>
+      <div class="sec-body reveal">
+        <p>Capturas reales de la app funcionando — toca cualquiera para ampliarla.</p>
+        <div class="gallery" id="gallery">
+          <figure data-full="assets/memoria/intro-blue.png"><img src="assets/memoria/intro-blue.png" alt="Logo azul metálico de la intro" loading="lazy"><figcaption>Intro · logo inicial</figcaption></figure>
+          <figure data-full="assets/memoria/intro-green.png"><img src="assets/memoria/intro-green.png" alt="Logo verde en modo programación" loading="lazy"><figcaption>Intro · modo programación</figcaption></figure>
+          <figure data-full="assets/memoria/app-connected.png"><img src="assets/memoria/app-connected.png" alt="App conectada al coche" loading="lazy"><figcaption>App · conectada</figcaption></figure>
+          <figure data-full="assets/memoria/app-light.png"><img src="assets/memoria/app-light.png" alt="App en tema claro" loading="lazy"><figcaption>App · tema claro</figcaption></figure>
+          <figure data-full="assets/memoria/welcome.png"><img src="assets/memoria/welcome.png" alt="Diálogo de bienvenida" loading="lazy"><figcaption>Bienvenida</figcaption></figure>
+          <figure data-full="assets/memoria/tour.png"><img src="assets/memoria/tour.png" alt="Guía paso a paso" loading="lazy"><figcaption>Guía interactiva</figcaption></figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 9. CONCLUSIONES ================= -->
+    <section class="sec" id="conclusiones" data-title="Conclusiones y mejoras futuras">
+      <div class="sec-head reveal">
+        <div class="sec-kicker"><span class="toc-num">9</span><span>Conclusiones</span><span class="readtime" data-readtime></span></div>
+        <h2 class="sec-title">Conclusiones y mejoras futuras</h2>
+      </div>
+      <div class="sec-body reveal">
+        <p>El proyecto demuestra que es posible construir, con herramientas accesibles para bachillerato, un sistema completo de control remoto que conecta electrónica física y desarrollo web moderno. Entre los aprendizajes más valiosos: la importancia de <strong>verificar el comportamiento real del hardware</strong> (el caso de las características BLE invertidas), de diseñar <strong>mecanismos de seguridad por defecto</strong> (parar ante cualquier fallo, nunca seguir a ciegas), y de que el rendimiento de una animación depende más de <em>qué</em> propiedades se animan que de cuántos efectos se añaden.</p>
+        <h3>Posibles ampliaciones</h3>
+        <div class="future-list">
+          <div class="future-item card"><span class="fi-ic"><svg class="ic"><use href="#i-rocket"/></svg></span><div><b>Modo autónomo</b><p>Usar los sensores de línea del Maqueen para que el coche siga un circuito sin intervención humana.</p></div></div>
+          <div class="future-item card"><span class="fi-ic"><svg class="ic"><use href="#i-rocket"/></svg></span><div><b>App instalable (PWA)</b><p>Convertir index.html en una aplicación instalable en el móvil, con icono propio y funcionamiento sin conexión a internet.</p></div></div>
+          <div class="future-item card"><span class="fi-ic"><svg class="ic"><use href="#i-rocket"/></svg></span><div><b>Telemetría</b><p>Registrar velocidad, distancia recorrida y frenadas de emergencia para analizarlas después, como una "caja negra" educativa.</p></div></div>
+          <div class="future-item card"><span class="fi-ic"><svg class="ic"><use href="#i-rocket"/></svg></span><div><b>Modo carreras</b><p>Controlar dos coches a la vez desde dos móviles distintos y cronometrar vueltas.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 10. QUIZ ================= -->
+    <section class="sec" id="quiz" data-title="Pon a prueba lo aprendido">
+      <div class="sec-head reveal">
+        <div class="sec-kicker"><span class="toc-num">10</span><span>Autoevaluación</span><span class="readtime" data-readtime></span></div>
+        <h2 class="sec-title">Pon a prueba lo aprendido</h2>
+        <p style="margin-top:8px">8 preguntas sobre los conceptos clave del proyecto. Tu resultado se guarda en este navegador.</p>
+      </div>
+      <div class="sec-body reveal">
+        <div class="card quiz-card" id="quizCard">
+          <div class="quiz-progress-wrap"><div class="bar"><i id="quizBar"></i></div><span id="quizCount">1 / 8</span></div>
+          <div id="quizStage"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 11. BIBLIOGRAFÍA ================= -->
+    <section class="sec" id="biblio" data-title="Bibliografía">
+      <div class="sec-head reveal">
+        <div class="sec-kicker"><span class="toc-num">11</span><span>Fuentes</span><span class="readtime" data-readtime></span></div>
+        <h2 class="sec-title">Bibliografía y referencias</h2>
+      </div>
+      <div class="sec-body reveal">
+        <div class="card" style="padding:6px 18px">
+          <ul class="plain biblio-list">
+            <li class="biblio-item"><span class="bi-n">01</span><div><a href="https://makecode.microbit.org/reference/bluetooth" target="_blank" rel="noopener">MakeCode — Bluetooth Service (microbit.org)</a><p>Referencia oficial del servicio Bluetooth UART del micro:bit.</p></div></li>
+            <li class="biblio-item"><span class="bi-n">02</span><div><a href="https://github.com/DFRobot/pxt-maqueen" target="_blank" rel="noopener">DFRobot/pxt-maqueen (GitHub)</a><p>Código fuente de la extensión Maqueen para MakeCode.</p></div></li>
+            <li class="biblio-item"><span class="bi-n">03</span><div><a href="https://developer.mozilla.org/docs/Web/API/Web_Bluetooth_API" target="_blank" rel="noopener">MDN — Web Bluetooth API</a><p>Documentación de la API usada por la app para conectar con el micro:bit.</p></div></li>
+            <li class="biblio-item"><span class="bi-n">04</span><div><a href="https://www.bluetooth.com/specifications/specs/" target="_blank" rel="noopener">Bluetooth SIG — Especificaciones GATT</a><p>Define cómo funcionan servicios y características en BLE.</p></div></li>
+            <li class="biblio-item"><span class="bi-n">05</span><div><a href="https://microbit.org/get-started/user-guide/overview/" target="_blank" rel="noopener">micro:bit.org — Guía de usuario</a><p>Características técnicas de la placa BBC micro:bit v2.</p></div></li>
+          </ul>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:14px">📌 Si tu profesor/a pide datos estadísticos sobre seguridad vial (accidentalidad, edad de los conductores, etc.), añádelos aquí citando una fuente oficial como la <a href="https://www.dgt.es" target="_blank" rel="noopener">DGT</a> o la OMS — no se han incluido cifras concretas en esta memoria para no citar datos sin verificar.</p>
+      </div>
+    </section>
+
+    <!-- ================= ANEXO ================= -->
+    <section class="sec" id="anexo" data-title="Anexo: comandos">
+      <div class="sec-head reveal">
+        <div class="sec-kicker"><span class="toc-num">A</span><span>Anexo</span><span class="readtime" data-readtime></span></div>
+        <h2 class="sec-title">Anexo: tabla completa de comandos</h2>
+      </div>
+      <div class="sec-body reveal">
+        <p>Para cuadrar la app con el programa del micro:bit en MakeCode. Enlace al repositorio y a la app: <a href="index.html">abrir index.html</a>.</p>
+        <div class="table-wrap"><table class="cmds">
+          <thead><tr><th>Comando</th><th>Formato</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td><code>avanzar</code></td><td>texto + \n</td><td>Mueve el coche hacia delante mientras se mantiene pulsado</td></tr>
+            <tr><td><code>atras</code></td><td>texto + \n</td><td>Mueve el coche hacia atrás</td></tr>
+            <tr><td><code>izquierda</code></td><td>texto + \n</td><td>Gira a la izquierda sobre su eje</td></tr>
+            <tr><td><code>derecha</code></td><td>texto + \n</td><td>Gira a la derecha sobre su eje</td></tr>
+            <tr><td><code>parar</code></td><td>texto + \n</td><td>Frena inmediatamente (botón de emergencia)</td></tr>
+            <tr><td><code>vel&lt;0-100&gt;</code></td><td>p.ej. <code>vel75</code></td><td>Fija la velocidad del 0 al 100%</td></tr>
+            <tr><td><code>bocina</code></td><td>texto + \n</td><td>Hace sonar el zumbador un instante</td></tr>
+            <tr><td><code>luces</code></td><td>texto + \n</td><td>Alterna las luces/intermitentes ON/OFF</td></tr>
+            <tr><td><code>seguridad</code></td><td>texto + \n</td><td>Alterna el frenado automático por sensor ON/OFF</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <footer class="page-foot">
+      <span class="fs">Memoria generada para el proyecto <strong>Seguridad Vial con micro:bit</strong>.</span>
+      <a href="index.html">Abrir la app de control →</a>
+    </footer>
+  </main>
+</div>
+
+<div class="lightbox" id="lightbox"><div class="lightbox-scrim"></div><button class="lightbox-close" id="lightboxClose"><svg class="ic"><use href="#i-close"/></svg></button><img id="lightboxImg" src="" alt=""></div>
+
+<button class="fab-top" id="fabTop" aria-label="Volver arriba"><svg class="ic"><use href="#i-up"/></svg></button>
+
+<script>
+'use strict';
+/* =======================================================================
+   MEMORIA INTERACTIVA — lógica de la página
+   1. Preferencias compartidas con la app (tema/acento)
+   2. Reveal-on-scroll + tiempos de lectura
+   3. Índice: generación, scrollspy, progreso de lectura, drawer móvil
+   4. Barra de progreso de scroll
+   5. Campos editables de la portada (localStorage)
+   6. Diagrama de arquitectura interactivo
+   7. Simulador de comandos BLE
+   8. Mini reproducción de la intro
+   9. Código: copiar al portapapeles
+   10. Galería + lightbox
+   11. Quiz de autoevaluación
+   12. Botón volver arriba + imprimir + tema
+   ======================================================================= */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- 1. Preferencias (misma clave que index.html) ---------- */
+const Prefs = {
+  KEY: 'sv-prefs-v1',
+  data: { theme: 'dark', accent: 'green', haptics: true },
+  load() {
+    try {
+      const s = JSON.parse(localStorage.getItem(this.KEY) || '{}');
+      if (s.theme === 'light' || s.theme === 'dark') this.data.theme = s.theme;
+      if (['green','cyan','violet'].includes(s.accent)) this.data.accent = s.accent;
+      if (typeof s.haptics === 'boolean') this.data.haptics = s.haptics;
+    } catch (e) {}
+    return this;
+  },
+  save() { try { localStorage.setItem(this.KEY, JSON.stringify(this.data)); } catch (e) {} },
+  apply() {
+    document.documentElement.dataset.theme = this.data.theme;
+    document.documentElement.dataset.accent = this.data.accent;
+    $('#themeIcon use').setAttribute('href', this.data.theme === 'dark' ? '#i-moon' : '#i-sun');
+  },
+  toggleTheme() { this.data.theme = this.data.theme === 'dark' ? 'light' : 'dark'; this.save(); this.apply(); },
+};
+Prefs.load().apply();
+$('#themeBtn').addEventListener('click', () => Prefs.toggleTheme());
+$('#printBtn').addEventListener('click', () => window.print());
+
+/* ---------- 2. Reveal on scroll + tiempo de lectura ---------- */
+const revealObs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); revealObs.unobserve(e.target); } });
+}, { threshold: .12, rootMargin: '0px 0px -8% 0px' });
+$$('.reveal').forEach(el => revealObs.observe(el));
+
+$$('section.sec').forEach(sec => {
+  const words = sec.textContent.trim().split(/\s+/).length;
+  const mins = Math.max(1, Math.round(words / 200));
+  const el = $('[data-readtime]', sec);
+  if (el) el.innerHTML = `<svg class="ic"><use href="#i-print"/></svg> ~${mins} min`;
+});
+
+/* ---------- 3. Índice: generación + scrollspy + progreso leído ---------- */
+const SECTIONS = $$('section.sec[id]').map(sec => ({ id: sec.id, title: sec.dataset.title, el: sec }));
+const VISITED_KEY = 'sv-memoria-visited';
+let visited = new Set();
+try { visited = new Set(JSON.parse(localStorage.getItem(VISITED_KEY) || '[]')); } catch (e) {}
+
+function buildToc(container) {
+  container.innerHTML = SECTIONS.map((s, i) => `
+    <li><a class="toc-item${visited.has(s.id) ? ' visited' : ''}" href="#${s.id}" data-id="${s.id}">
+      <span class="toc-num">${i + 1}</span><span>${s.title}</span>
+      <svg class="ic toc-check"><use href="#i-check"/></svg>
+    </a></li>`).join('');
+}
+buildToc($('#tocList'));
+buildToc($('#tocListDesk'));
+
+function markVisited(id) {
+  if (visited.has(id)) return;
+  visited.add(id);
+  try { localStorage.setItem(VISITED_KEY, JSON.stringify([...visited])); } catch (e) {}
+  $$(`.toc-item[data-id="${id}"]`).forEach(el => el.classList.add('visited'));
+}
+
+const spyObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    const id = e.target.id;
+    if (e.isIntersecting) {
+      $$('.toc-item').forEach(el => el.classList.toggle('active', el.dataset.id === id));
+    }
+    // Se marca como "visitada" cuando se ha dejado atrás (ya pasó por ella leyendo)
+    if (e.boundingClientRect.top < 0 && e.intersectionRatio < .3) markVisited(id);
+  });
+}, { threshold: [0, .3, .6], rootMargin: '-84px 0px -55% 0px' });
+SECTIONS.forEach(s => spyObs.observe(s.el));
+
+// Drawer móvil del índice
+const tocDrawer = $('#tocDrawer'), tocScrim = $('#tocScrim');
+function openToc() { tocDrawer.classList.add('on'); tocScrim.classList.add('on'); document.body.style.overflow = 'hidden'; }
+function closeToc() { tocDrawer.classList.remove('on'); tocScrim.classList.remove('on'); document.body.style.overflow = ''; }
+$('#tocToggle').addEventListener('click', openToc);
+tocScrim.addEventListener('click', closeToc);
+$$('#tocList a').forEach(a => a.addEventListener('click', closeToc));
+
+/* ---------- 4. Barra de progreso de scroll ---------- */
+const progressFill = $('#progressFill'), tbLabel = $('#tbProgressLabel'), fabTop = $('#fabTop');
+let ticking = false;
+function onScroll() {
+  if (ticking) return;
+  ticking = true;
+  requestAnimationFrame(() => {
+    const max = document.documentElement.scrollHeight - innerHeight;
+    const p = max > 0 ? clamp(scrollY / max, 0, 1) : 0;
+    progressFill.style.width = (p * 100).toFixed(1) + '%';
+    tbLabel.textContent = Math.round(p * 100) + '% leído';
+    fabTop.classList.toggle('on', scrollY > 700);
+    sweepVisited();
+    ticking = false;
+  });
+}
+// Red de seguridad: además del IntersectionObserver (que puede saltarse secciones
+// en un salto instantáneo, p.ej. al pulsar un enlace del índice sin scroll suave),
+// aprovechamos el mismo requestAnimationFrame de la barra de progreso para comprobar
+// qué secciones han quedado por encima de la pantalla.
+function sweepVisited() {
+  SECTIONS.forEach(s => { if (s.el.getBoundingClientRect().bottom < 60) markVisited(s.id); });
+}
+addEventListener('scroll', onScroll, { passive: true });
+onScroll();
+sweepVisited();
+fabTop.addEventListener('click', () => scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }));
+
+/* ---------- 5. Campos editables de la portada ---------- */
+const META_KEY = 'sv-memoria-meta';
+const metaFields = $$('.meta-cell [contenteditable]');
+try {
+  const saved = JSON.parse(localStorage.getItem(META_KEY) || '{}');
+  metaFields.forEach(f => { if (saved[f.dataset.key]) f.textContent = saved[f.dataset.key]; });
+} catch (e) {}
+function saveMeta() {
+  const data = {};
+  metaFields.forEach(f => { data[f.dataset.key] = f.textContent.trim(); });
+  try { localStorage.setItem(META_KEY, JSON.stringify(data)); } catch (e) {}
+}
+metaFields.forEach(f => {
+  f.addEventListener('input', saveMeta);
+  f.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); f.blur(); } });
+});
+
+/* ---------- 6. Diagrama de arquitectura interactivo ---------- */
+const DIAGRAM_INFO = {
+  movil: { t: 'El móvil (navegador Chrome)', d: 'Ejecuta la app web. Usa la Web Bluetooth API para buscar el micro:bit, conectarse y escribir comandos de texto en su característica Bluetooth.' },
+  microbit: { t: 'El micro:bit', d: 'Recibe el texto por el servicio UART, lo interpreta con el programa de MakeCode y llama a los bloques de Maqueen según el comando recibido.' },
+  maqueen: { t: 'El robot Maqueen', d: 'Chasis con dos motores, sensor ultrasónico y LEDs, controlado por el micro:bit a través del protocolo I2C.' },
+};
+const diagramDetail = $('#diagramDetail');
+$$('.dg-node', $('#archDiagram')).forEach(node => {
+  const activate = () => {
+    $$('.dg-node', $('#archDiagram')).forEach(n => n.classList.remove('active'));
+    node.classList.add('active');
+    const info = DIAGRAM_INFO[node.dataset.key];
+    diagramDetail.innerHTML = `<b>${info.t}</b><p>${info.d}</p>`;
+  };
+  node.addEventListener('click', activate);
+  node.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
+});
+
+/* ---------- 7. Simulador de comandos BLE ---------- */
+const simLog = $('#simLog');
+let simLogged = false;
+function logCmd(cmd) {
+  if (!simLogged) { simLog.innerHTML = ''; simLogged = true; }
+  const row = document.createElement('div');
+  row.className = 'row';
+  const time = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  row.innerHTML = `<span class="t">${time}</span><span>→ enviado:</span><span class="cmd">"${cmd}\\n"</span>`;
+  simLog.prepend(row);
+  // limitar a 30 filas
+  while (simLog.children.length > 30) simLog.lastChild.remove();
+  pulseWire();
+}
+function pulseWire() {
+  [$('#snMovil'), $('#snMicrobit'), $('#snMaqueen')].forEach(n => n.classList.remove('pulse'));
+  const w1 = $('#wireDot1'), w2 = $('#wireDot2');
+  $('#snMovil').classList.add('pulse');
+  w1.style.transition = 'none'; w1.style.left = '0%'; w1.style.opacity = '1';
+  requestAnimationFrame(() => { w1.style.transition = 'left .35s linear, opacity .2s'; w1.style.left = '100%'; });
+  setTimeout(() => { $('#snMicrobit').classList.add('pulse'); w1.style.opacity = '0'; }, 360);
+  setTimeout(() => {
+    w2.style.transition = 'none'; w2.style.left = '0%'; w2.style.opacity = '1';
+    requestAnimationFrame(() => { w2.style.transition = 'left .3s linear, opacity .2s'; w2.style.left = '100%'; });
+  }, 380);
+  setTimeout(() => { $('#snMaqueen').classList.add('pulse'); w2.style.opacity = '0'; }, 700);
+  setTimeout(() => { $$('.sim-node').forEach(n => n.classList.remove('pulse')); }, 1500);
+}
+$$('.mp-btn', $('#miniPad')).forEach(btn => {
+  const press = () => { btn.classList.add('active'); logCmd(btn.dataset.cmd); };
+  const release = () => { btn.classList.remove('active'); logCmd('parar'); };
+  btn.addEventListener('pointerdown', press);
+  btn.addEventListener('pointerup', release);
+  btn.addEventListener('pointerleave', () => btn.classList.remove('active'));
+});
+$('#miniStop').addEventListener('click', () => logCmd('parar'));
+let lastMiniVel = 60;
+$('#miniSpeed').addEventListener('input', e => {
+  $('#miniSpeedVal').textContent = e.target.value;
+  clearTimeout(window.__velT);
+  window.__velT = setTimeout(() => { if (+e.target.value !== lastMiniVel) { lastMiniVel = +e.target.value; logCmd('vel' + e.target.value); } }, 120);
+});
+$('#simHorn').addEventListener('click', () => logCmd('bocina'));
+['simLights', 'simSafety'].forEach(id => {
+  const btn = $('#' + id);
+  btn.addEventListener('click', () => { btn.classList.toggle('on'); logCmd(btn.dataset.cmd); });
+});
+$('#simClear').addEventListener('click', () => { simLog.innerHTML = '<div class="empty">Pulsa un control para ver el comando que se enviaría…</div>'; simLogged = false; });
+
+/* ---------- 8. Mini reproducción de la intro ---------- */
+(() => {
+  const box = $('#introDemoBox'), blue = $('#demoBlue'), green = $('#demoGreen'), hint = $('#demoHint');
+  const cv = $('#demoCanvas'), ctx = cv.getContext('2d');
+  const btn = $('#playIntroDemo');
+  let raf = null, running = false;
+  function resize() { const r = box.getBoundingClientRect(); cv.width = r.width; cv.height = r.height; }
+  function boom(cx, cy) {
+    const parts = [];
+    for (let i = 0; i < 70; i++) {
+      const a = Math.random() * Math.PI * 2, sp = 60 + Math.random() * 220;
+      parts.push({ x: cx, y: cy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0, max: .5 + Math.random() * .5 });
+    }
+    return parts;
+  }
+  function play() {
+    if (running) return;
+    running = true;
+    hint.style.opacity = '0';
+    resize();
+    const svg = $('#demoLogoSvg');
+    svg.style.opacity = '0';
+    blue.setAttribute('opacity', 1); green.setAttribute('opacity', 0);
+    let parts = null, start = performance.now(), last = start;
+    function frame(now) {
+      const t = (now - start) / 1000, dt = Math.min(.04, (now - last) / 1000); last = now;
+      const pIn = Math.min(1, t / .5);
+      svg.style.opacity = pIn.toFixed(2);
+      svg.style.transform = `scale(${(.85 + .15 * pIn).toFixed(3)})`;
+      const g = Math.max(0, Math.min(1, (t - .9) / .7));
+      green.setAttribute('opacity', g.toFixed(2)); blue.setAttribute('opacity', (1 - g).toFixed(2));
+      if (t >= 1.9 && !parts) {
+        const r = box.getBoundingClientRect();
+        parts = boom(r.width / 2, r.height / 2);
+        svg.style.opacity = '0';
+      }
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      if (parts) {
+        ctx.globalCompositeOperation = 'lighter';
+        for (const p of parts) {
+          p.life += dt; if (p.life >= p.max) continue;
+          p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .96; p.vy *= .96;
+          ctx.globalAlpha = 1 - p.life / p.max;
+          ctx.fillStyle = '#4ef08e';
+          ctx.fillRect(p.x, p.y, 3, 3);
+        }
+        ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+      }
+      if (t < 2.8) raf = requestAnimationFrame(frame);
+      else { running = false; ctx.clearRect(0, 0, cv.width, cv.height); svg.style.opacity = '0'; hint.style.opacity = '1'; hint.textContent = '▶ Volver a reproducir'; }
+    }
+    raf = requestAnimationFrame(frame);
+  }
+  btn.addEventListener('click', play);
+  if (reduceMotion) hint.textContent = '▶ Reproducir (versión corta)';
+})();
+
+/* ---------- 9. Copiar código ---------- */
+$$('.copy-btn[data-copy]').forEach(btn => {
+  btn.addEventListener('click', e => {
+    e.preventDefault(); e.stopPropagation();
+    const code = $('#' + btn.dataset.copy);
+    const text = code ? code.textContent : '';
+    const done = () => { const old = btn.innerHTML; btn.innerHTML = '<svg class="ic"><use href="#i-check"/></svg>¡Copiado!'; setTimeout(() => btn.innerHTML = old, 1600); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(done);
+    else done();
+  });
+});
+
+/* ---------- 10. Galería + lightbox ---------- */
+const lightbox = $('#lightbox'), lightboxImg = $('#lightboxImg');
+$$('#gallery figure').forEach(fig => {
+  fig.addEventListener('click', () => {
+    lightboxImg.src = fig.dataset.full;
+    lightboxImg.alt = $('img', fig).alt;
+    lightbox.classList.add('on');
+  });
+});
+function closeLightbox() { lightbox.classList.remove('on'); }
+$('#lightboxClose').addEventListener('click', closeLightbox);
+$('.lightbox-scrim').addEventListener('click', closeLightbox);
+addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+/* ---------- 11. Quiz de autoevaluación ---------- */
+const QUIZ = [
+  { q: '¿Qué significa BLE?', opts: ['Bluetooth Low Energy', 'Basic Link Encoding', 'Bluetooth Local Emitter', 'Binary Line Exchange'], c: 0, ex: 'BLE (Bluetooth Low Energy) es la versión de Bluetooth pensada para dispositivos de bajo consumo, como el micro:bit.' },
+  { q: '¿Qué hace el servicio UART del micro:bit?', opts: ['Mide la temperatura', 'Enciende la pantalla de LEDs', 'Simula un puerto serie para enviar y recibir texto por Bluetooth', 'Conecta con el WiFi'], c: 2, ex: 'UART imita un cable serie clásico: permite mandar texto (nuestros comandos) por Bluetooth.' },
+  { q: '¿Por qué cada comando que manda la app termina en un salto de línea (\\n)?', opts: ['Por estética', 'Porque el micro:bit lee el texto hasta encontrar ese carácter y sabe que ahí acaba el comando', 'Es obligatorio en todo mensaje Bluetooth', 'Para separar mayúsculas de minúsculas'], c: 1, ex: 'El bloque de MakeCode "leer UART hasta Nueva línea" corta el texto justo en el \\n.' },
+  { q: 'En el micro:bit real, ¿qué característica BLE usa la app para ESCRIBIR comandos?', opts: ['6e400001', '6e400002', '6e400003', 'Da igual, cualquiera vale'], c: 2, ex: 'Aunque el estándar genérico dice lo contrario, en el micro:bit real la 6e400003 es la de escritura (RX). La app elige el canal según sus propiedades, no por el UUID fijo.' },
+  { q: 'Si el coche está avanzando y se corta el Bluetooth, ¿qué debe ocurrir?', opts: ['Sigue avanzando hasta chocar', 'Se para automáticamente', 'Empieza a pitar sin parar', 'No pasa nada, se queda esperando'], c: 1, ex: 'Es una medida de seguridad: tanto la app como el micro:bit están pensados para frenar ante cualquier pérdida de conexión.' },
+  { q: '¿Por qué Web Bluetooth exige HTTPS (o localhost)?', opts: ['Limitación de los móviles Android', 'Por seguridad: evita que una página cualquiera acceda a tus dispositivos Bluetooth sin que lo sepas', 'Para que cargue más rápido', 'No es cierto, funciona igual en HTTP'], c: 1, ex: 'Acceder a hardware del usuario (Bluetooth, cámara, ubicación…) solo se permite en contextos seguros.' },
+  { q: '¿Qué sensor usa el Maqueen para el frenado de emergencia ("seguridad")?', opts: ['Sensor de luz', 'Sensor ultrasónico de distancia', 'Acelerómetro', 'Micrófono'], c: 1, ex: 'El sensor ultrasónico mide la distancia al obstáculo más cercano; si es menor que el umbral, se frena.' },
+  { q: 'Para que la animación de la intro vaya fluida, ¿qué propiedades CSS se animan sobre todo?', opts: ['width y height', 'top y left', 'transform y opacity', 'margin y padding'], c: 2, ex: 'Animar transform/opacity deja que lo mueva la GPU, sin recalcular el diseño de toda la página.' },
+];
+const QUIZ_KEY = 'sv-memoria-quiz';
+let qi = 0, qScore = 0, qAnswered = false;
+const quizStage = $('#quizStage'), quizBar = $('#quizBar'), quizCount = $('#quizCount');
+
+function renderQuestion() {
+  qAnswered = false;
+  const item = QUIZ[qi];
+  quizBar.style.width = (qi / QUIZ.length * 100) + '%';
+  quizCount.textContent = `${qi + 1} / ${QUIZ.length}`;
+  quizStage.innerHTML = `
+    <div class="quiz-q">${item.q}</div>
+    <div class="quiz-opts">${item.opts.map((o, i) => `<button class="quiz-opt" data-i="${i}"><span class="qo-mark">${String.fromCharCode(65 + i)}</span><span>${o}</span></button>`).join('')}</div>
+    <div class="quiz-explain" id="quizExplain">${item.ex}</div>
+    <div class="quiz-foot"><button class="btn primary" id="quizNext" disabled>${qi === QUIZ.length - 1 ? 'Ver resultado' : 'Siguiente'} <svg class="ic"><use href="#i-arrow"/></svg></button></div>`;
+  $$('.quiz-opt', quizStage).forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (qAnswered) return;
+      qAnswered = true;
+      const i = +btn.dataset.i;
+      $$('.quiz-opt', quizStage).forEach((b, bi) => {
+        b.disabled = true;
+        if (bi === item.c) b.classList.add('correct');
+        else if (bi === i) b.classList.add('wrong');
+      });
+      if (i === item.c) qScore++;
+      $('#quizExplain').classList.add('on');
+      $('#quizNext').disabled = false;
+    });
+  });
+  $('#quizNext').addEventListener('click', () => {
+    if (qi < QUIZ.length - 1) { qi++; renderQuestion(); }
+    else renderResult();
+  });
+}
+function renderResult() {
+  quizBar.style.width = '100%';
+  quizCount.textContent = `${QUIZ.length} / ${QUIZ.length}`;
+  const pct = Math.round(qScore / QUIZ.length * 100);
+  const msg = pct === 100 ? '¡Perfecto! Dominas el proyecto por completo.' : pct >= 75 ? 'Muy buen nivel, solo algún detalle por repasar.' : pct >= 50 ? 'Vas bien, repasa el marco teórico y la arquitectura.' : 'Repasa las secciones 3 a 6 y vuelve a intentarlo.';
+  quizStage.innerHTML = `
+    <div class="quiz-result">
+      <div class="qr-score">${qScore}/${QUIZ.length}</div>
+      <div class="qr-msg">${msg}</div>
+      <p>Resultado guardado en este navegador (${pct}% de aciertos).</p>
+      <div class="quiz-retry-wrap"><button class="btn ghost" id="quizRetry">Repetir el test</button></div>
+    </div>`;
+  try { localStorage.setItem(QUIZ_KEY, JSON.stringify({ score: qScore, total: QUIZ.length, date: Date.now() })); } catch (e) {}
+  $('#quizRetry').addEventListener('click', () => { qi = 0; qScore = 0; renderQuestion(); });
+}
+renderQuestion();
+
+/* ---------- 12. Cierre: generar lazo con la app (vuelve a aplicar prefs si cambian en otra pestaña) ---------- */
+addEventListener('storage', e => { if (e.key === Prefs.KEY) { Prefs.load().apply(); } });
+</script>
+</body>
+</html>
