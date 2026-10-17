@@ -140,3 +140,16 @@ Todo el código está comentado en español dentro de `index.html`, por seccione
 6. **Controles**: *Pointer Events* para mantener pulsado (dedo, ratón o lápiz), multitáctil, teclado y vibración háptica (`navigator.vibrate`).
 
 Medidas de seguridad incluidas: soltar = `parar`, botón PARAR siempre activo, `parar` al desconectar y «hombre muerto» si la app se minimiza mientras el coche se mueve.
+
+---
+
+## 7. Creador Web (`creador-web.html`)
+
+Un editor para crear páginas web con HTML, CSS y JavaScript que funciona entero en el navegador, también en un solo archivo. Se abre igual que la app (GitHub Pages, `localhost` o haciendo doble clic).
+
+- **Carpetas ordenadas**: `html/`, `css/`, `js/`, `img/` y `memoria/`. La carpeta `memoria` no se puede borrar: `memoria.html` se genera sola (archivos, mini explicación de cada uno, tus notas, glosario, diario de cambios y revisión) y `notas.md` es para tus apuntes.
+- **Editor**: colores, autocompletado (también ids, clases y archivos del proyecto), cierre de etiquetas y paréntesis, abreviaturas tipo `ul>li*3` + Tab, buscar y reemplazar, ordenar sangrías y «Explicar esta línea».
+- **Corrector**: encuentra errores típicos, explica por qué importan y muchos los arregla con un clic. Si pones CSS o JavaScript donde no toca, lo mueve a su carpeta y lo enlaza.
+- **Vista previa en directo** con consola, tamaños de móvil y tablet, y «abrir en pestaña nueva» (necesario para Web Bluetooth).
+- **Asistente**: sin clave funciona en local (corrector, glosario y recetas). Con una clave de la API de Claude puede escribir código contigo; antes de aplicar un cambio enseña las diferencias y guarda una versión.
+- **Guardado local** (IndexedDB) con historial de versiones, plantillas (incluida una del control remoto), descarga en `.zip`, en un solo `.html` o solo la memoria.
