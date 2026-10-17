@@ -217,7 +217,8 @@ h2.sec-title { font-size: clamp(22px, 4vw, 30px); max-width: 30ch; }
 /* Diagrama de arquitectura */
 .diagram-card { padding: 20px; }
 .diagram-svg { width: 100%; height: auto; display: block; }
-.dg-node { cursor: pointer; }
+.dg-node { cursor: pointer; outline: none; }
+.dg-node:focus-visible .dg-box { stroke: rgb(var(--a)); stroke-width: 3; }
 .dg-node rect, .dg-node circle { transition: fill .25s, stroke .25s, filter .25s; }
 .dg-node .dg-box { fill: var(--faint); stroke: var(--line); stroke-width: 1.5; }
 .dg-node.active .dg-box { stroke: rgb(var(--a)); fill: rgb(var(--a) / .12); }
@@ -458,14 +459,14 @@ footer.page-foot .fs { flex: 1; }
     <!-- ================= PORTADA ================= -->
     <section class="cover" id="portada">
       <div class="cover-badges reveal" style="--i:0">
-        <span class="pill"><svg class="ic"><use href="#i-chip"/></svg> BBC micro:bit v2</span>
-        <span class="pill"><svg class="ic"><use href="#i-radio"/></svg> Bluetooth Low Energy</span>
+        <span class="pill"><svg class="ic"><use href="#i-chip"/></svg> micro:bit</span>
         <span class="pill"><svg class="ic"><use href="#i-car"/></svg> Robot Maqueen</span>
-        <span class="pill"><svg class="ic"><use href="#i-phone"/></svg> Web Bluetooth API</span>
+        <span class="pill"><svg class="ic"><use href="#i-radio"/></svg> Bluetooth</span>
+        <span class="pill"><svg class="ic"><use href="#i-phone"/></svg> App web</span>
       </div>
       <span class="cover-logo reveal" style="--i:1; color: rgb(var(--a))"><svg viewBox="0 0 260 160"><use href="#i-face"/></svg></span>
       <h1 class="reveal" style="--i:2">Seguridad Vial con <span class="accent-word">micro:bit</span></h1>
-      <p class="lead reveal" style="--i:3">Memoria del proyecto: diseño y construcción de un coche robot educativo, controlado por Bluetooth desde el móvil, para enseñar conceptos de seguridad vial y electrónica aplicada.</p>
+      <p class="lead reveal" style="--i:3">Memoria del proyecto: un coche robot que se controla desde el móvil por Bluetooth, pensado para aprender sobre seguridad vial.</p>
 
       <div class="cover-meta card reveal" style="--i:4">
         <div class="meta-grid">
@@ -487,18 +488,17 @@ footer.page-foot .fs { flex: 1; }
     </section>
 
     <!-- ================= 1. INTRODUCCIÓN ================= -->
-    <section class="sec" id="introduccion" data-title="Introducción y justificación">
+    <section class="sec" id="introduccion" data-title="Introducción">
       <div class="sec-head reveal">
         <div class="sec-kicker"><span class="toc-num">1</span><span>Introducción</span><span class="readtime" data-readtime></span></div>
-        <h2 class="sec-title">Introducción y justificación</h2>
+        <h2 class="sec-title">¿De qué trata el proyecto?</h2>
       </div>
       <div class="sec-body reveal">
-        <p class="lead">La seguridad vial es uno de esos temas que todo el mundo da por sabido hasta que se para a pensarlo de verdad: frenar a tiempo, respetar la velocidad, señalizar las maniobras, reaccionar ante un obstáculo. Son automatismos que un conductor humano aprende con la práctica, pero que también se pueden <strong>explicar, programar y poner a prueba</strong> en un sistema mucho más simple: un coche robot.</p>
-        <p>Este proyecto nace de unir dos asignaturas que normalmente van por separado: la <strong>electrónica y programación por bloques</strong> (micro:bit, MakeCode, el robot Maqueen) y el <strong>desarrollo web moderno</strong> (una app que se conecta por Bluetooth directamente desde el navegador del móvil, sin instalar nada). El resultado es un sistema completo, de extremo a extremo, que se puede tocar, conducir y explicar en una presentación.</p>
-        <p>Además de ser un ejercicio técnico, el proyecto sirve como <strong>herramienta didáctica</strong>: el robot incorpora un sistema de frenado de emergencia por sensor de distancia, luces de aviso y bocina, exactamente los mismos conceptos — distancia de seguridad, señalización, reacción ante obstáculos — que se explican en la educación vial, pero aquí se pueden <em>programar, fallar, depurar y volver a probar</em>, que es como de verdad se interioriza un concepto técnico.</p>
+        <p class="lead">He construido un coche robot que se maneja desde el móvil. La idea es usar la tecnología para aprender normas básicas de seguridad vial: frenar a tiempo, avisar con las luces y la bocina, y detenerse ante un obstáculo.</p>
+        <p>El coche es un robot <strong>Maqueen</strong> con una placa <strong>micro:bit</strong>. El mando a distancia es una <strong>página web</strong> que se abre en el móvil y se conecta al coche por <strong>Bluetooth</strong>.</p>
         <div class="grid-2" style="margin-top:22px">
-          <div class="info-card card"><div class="ic-head"><span class="ic-icon"><svg class="ic"><use href="#i-lab"/></svg></span><h4>Por qué STEM</h4></div><p>Combina electrónica, programación por bloques, programación web, física del movimiento y diseño de interfaces en un único proyecto con un resultado tangible: un coche que de verdad se mueve.</p></div>
-          <div class="info-card card"><div class="ic-head"><span class="ic-icon"><svg class="ic"><use href="#i-shield"/></svg></span><h4>Por qué seguridad vial</h4></div><p>Traduce normas de circulación (frenar a tiempo, avisar, respetar la distancia) en reglas de programación concretas y comprobables en el propio robot.</p></div>
+          <div class="info-card card"><div class="ic-head"><span class="ic-icon"><svg class="ic"><use href="#i-lab"/></svg></span><h4>Qué he aprendido</h4></div><p>Electrónica básica, programación por bloques y cómo se hace una página web.</p></div>
+          <div class="info-card card"><div class="ic-head"><span class="ic-icon"><svg class="ic"><use href="#i-shield"/></svg></span><h4>Relación con la seguridad vial</h4></div><p>El coche frena solo si detecta algo delante, como el frenado de emergencia de algunos coches actuales.</p></div>
         </div>
       </div>
     </section>
@@ -507,87 +507,77 @@ footer.page-foot .fs { flex: 1; }
     <section class="sec" id="objetivos" data-title="Objetivos">
       <div class="sec-head reveal">
         <div class="sec-kicker"><span class="toc-num">2</span><span>Objetivos</span><span class="readtime" data-readtime></span></div>
-        <h2 class="sec-title">Qué se quiere conseguir</h2>
+        <h2 class="sec-title">Qué quería conseguir</h2>
       </div>
       <div class="sec-body reveal">
-        <div class="card obj-general"><p style="margin:0"><strong>Objetivo general:</strong> diseñar y construir un sistema completo — hardware y software — que permita controlar de forma remota un vehículo robótico educativo mediante Bluetooth de baja energía, aplicando conceptos de comunicación inalámbrica, programación por bloques y desarrollo web, mientras se refuerzan nociones de seguridad vial.</p></div>
+        <div class="card obj-general"><p style="margin:0"><strong>Objetivo general:</strong> construir un coche robot que se pueda controlar desde el móvil y que tenga medidas de seguridad.</p></div>
         <ul class="plain obj-list" id="objList">
-          <li class="obj-item card"><span class="obj-check"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Programar el micro:bit</b><p>Que reciba órdenes de texto por Bluetooth y las traduzca en movimiento real del robot Maqueen.</p></div></li>
-          <li class="obj-item card"><span class="obj-check"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Desarrollar la app de control</b><p>Una web que se conecte por Bluetooth de baja energía (BLE) sin instalar nada, desde cualquier móvil Android compatible.</p></div></li>
-          <li class="obj-item card"><span class="obj-check"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Diseñar un protocolo fiable</b><p>Un conjunto de comandos de texto simple, fácil de depurar y de ampliar con nuevas funciones en el futuro.</p></div></li>
-          <li class="obj-item card"><span class="obj-check"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Incorporar seguridad activa</b><p>Frenado de emergencia por sensor de distancia, parada automática ante pérdida de conexión, y señalización con luces y bocina.</p></div></li>
-          <li class="obj-item card"><span class="obj-check"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Cuidar la experiencia de usuario</b><p>Una interfaz clara, atractiva y táctil, con información del estado de conexión siempre visible.</p></div></li>
-          <li class="obj-item card"><span class="obj-check"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Documentar el proceso</b><p>Dejar un registro — esta misma memoria — que permita a cualquier compañero entender, reproducir y ampliar el proyecto.</p></div></li>
+          <li class="obj-item card"><span class="obj-check"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Programar el micro:bit</b><p>Para que entienda las órdenes que le llegan por Bluetooth y mueva el coche.</p></div></li>
+          <li class="obj-item card"><span class="obj-check"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Crear la app de control</b><p>Una página web para manejar el coche desde el móvil.</p></div></li>
+          <li class="obj-item card"><span class="obj-check"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Añadir seguridad</b><p>Que el coche frene ante un obstáculo y se pare si se pierde la conexión.</p></div></li>
+          <li class="obj-item card"><span class="obj-check"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Explicar el proyecto</b><p>Contarlo en esta memoria para que otras personas puedan entenderlo.</p></div></li>
         </ul>
       </div>
     </section>
 
-    <!-- ================= 3. MARCO TEÓRICO ================= -->
-    <section class="sec" id="teoria" data-title="Marco teórico">
+    <!-- ================= 3. MATERIALES ================= -->
+    <section class="sec" id="materiales" data-title="Materiales">
       <div class="sec-head reveal">
-        <div class="sec-kicker"><span class="toc-num">3</span><span>Marco teórico</span><span class="readtime" data-readtime></span></div>
-        <h2 class="sec-title">Las piezas que hacen falta entender</h2>
+        <div class="sec-kicker"><span class="toc-num">3</span><span>Materiales</span><span class="readtime" data-readtime></span></div>
+        <h2 class="sec-title">Qué he usado</h2>
       </div>
       <div class="sec-body reveal">
-        <h3>3.1 · BBC micro:bit v2</h3>
-        <p>El micro:bit es una placa de desarrollo educativa del tamaño de una tarjeta de crédito, con un microcontrolador ARM Cortex-M4, pantalla de 25 LEDs, botones, acelerómetro, brújula, micrófono, altavoz y, lo que nos interesa aquí, <strong>radio Bluetooth</strong>. Se programa por bloques o por texto (JavaScript/Python) desde <a href="https://makecode.microbit.org" target="_blank" rel="noopener">MakeCode</a>, lo que la hace perfecta para un proyecto de bachillerato: es asequible, muy documentada, y se integra directamente con el robot Maqueen a través de su conector de borde.</p>
-
-        <h3>3.2 · Bluetooth Low Energy y el servicio UART</h3>
-        <p>Un dispositivo Bluetooth Low Energy (BLE) organiza lo que puede hacer en <strong>servicios</strong>, y cada servicio en varias <strong>características</strong> (characteristics) que se pueden leer, escribir o a las que uno se puede suscribir para recibir avisos. El micro:bit implementa el <em>Nordic UART Service</em>, que imita un cable serie clásico sobre Bluetooth: todo lo que la app "escribe" en una característica, el micro:bit lo recibe como si llegara por un cable, carácter a carácter.</p>
-        <div class="card diagram-card">
-          <svg class="diagram-svg" viewBox="0 0 640 220" id="archDiagram" role="img" aria-label="Diagrama de la arquitectura: móvil, micro:bit y Maqueen">
-            <defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="var(--line)"/></marker></defs>
-            <path class="dg-link" d="M150 110 H 300" marker-end="url(#arrow)"/>
-            <path class="dg-link" d="M150 110 H 300" marker-start="url(#arrow)" transform="translate(0,14)" opacity=".5"/>
-            <text class="dg-link-label" x="225" y="96" text-anchor="middle">BLE · UART</text>
-            <path class="dg-link" d="M420 110 H 500" marker-end="url(#arrow)"/>
-            <text class="dg-link-label" x="460" y="96" text-anchor="middle">I2C</text>
-
-            <g class="dg-node" data-key="movil" tabindex="0" role="button" aria-label="Móvil">
-              <rect class="dg-box" x="20" y="60" width="130" height="100" rx="16"/>
-              <text x="85" y="100" text-anchor="middle" font-size="13">Móvil</text>
-              <text class="dg-sub" x="85" y="118" text-anchor="middle" font-size="10">Chrome</text>
-            </g>
-            <g class="dg-node" data-key="microbit" tabindex="0" role="button" aria-label="micro:bit">
-              <rect class="dg-box" x="300" y="55" width="120" height="110" rx="16"/>
-              <text x="360" y="100" text-anchor="middle" font-size="13">micro:bit</text>
-              <text class="dg-sub" x="360" y="118" text-anchor="middle" font-size="10">UART · GATT</text>
-            </g>
-            <g class="dg-node" data-key="maqueen" tabindex="0" role="button" aria-label="Maqueen">
-              <rect class="dg-box" x="500" y="40" width="120" height="140" rx="16"/>
-              <text x="560" y="90" text-anchor="middle" font-size="13">Maqueen</text>
-              <text class="dg-sub" x="560" y="107" text-anchor="middle" font-size="10">Motores</text>
-              <text class="dg-sub" x="560" y="121" text-anchor="middle" font-size="10">Ultrasonidos</text>
-              <text class="dg-sub" x="560" y="135" text-anchor="middle" font-size="10">LEDs</text>
-            </g>
-          </svg>
-          <div class="diagram-detail" id="diagramDetail"><b>Toca un bloque</b><p>Pulsa sobre el móvil, el micro:bit o el Maqueen para ver qué hace cada parte del sistema.</p></div>
-          <p class="diagram-hint">Arquitectura general del sistema de comunicación</p>
+        <div class="grid-2">
+          <div class="info-card card"><div class="ic-head"><span class="ic-icon"><svg class="ic"><use href="#i-chip"/></svg></span><h4>micro:bit v2</h4></div><p>Una placa pequeña que se puede programar. Es el "cerebro" del coche: recibe las órdenes y controla los motores.</p></div>
+          <div class="info-card card"><div class="ic-head"><span class="ic-icon"><svg class="ic"><use href="#i-car"/></svg></span><h4>Robot Maqueen</h4></div><p>El coche en sí: dos ruedas con motor, un sensor que mide la distancia y luces.</p></div>
+          <div class="info-card card"><div class="ic-head"><span class="ic-icon"><svg class="ic"><use href="#i-bt"/></svg></span><h4>Bluetooth</h4></div><p>La forma en que el móvil y el coche se comunican, sin cables.</p></div>
+          <div class="info-card card"><div class="ic-head"><span class="ic-icon"><svg class="ic"><use href="#i-phone"/></svg></span><h4>App web</h4></div><p>Una página que funciona en el navegador Chrome del móvil, sin instalar nada.</p></div>
         </div>
 
-        <p style="margin-top:18px">Un detalle real que apareció durante el desarrollo, y que merece la pena contar: según el estándar genérico de Nordic, la característica <code style="font:600 13px var(--mono); color:rgb(var(--a))">6e400002</code> debería ser para escribir y la <code style="font:600 13px var(--mono); color:rgb(var(--a))">6e400003</code> para recibir. <strong>En el micro:bit real es justo al revés.</strong> La app no se fía del UUID fijo: pide las dos características y elige por sus <em>propiedades</em> (la que admite escritura es la buena), así funciona pase lo que pase. Es un buen ejemplo de por qué, en electrónica, hay que verificar el comportamiento real del hardware y no solo confiar en la documentación genérica.</p>
+        <h3 style="margin-top:28px">Cómo se conectan las piezas</h3>
+        <div class="card diagram-card">
+          <svg class="diagram-svg" viewBox="0 0 640 230" id="archDiagram" role="img" aria-label="Esquema: móvil, micro:bit y Maqueen">
+            <defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="var(--line)"/></marker></defs>
+            <path class="dg-link" d="M160 115 H 243" marker-end="url(#arrow)"/>
+            <text class="dg-link-label" x="202" y="101" text-anchor="middle" style="font-size:15px">Bluetooth</text>
+            <path class="dg-link" d="M395 115 H 478" marker-end="url(#arrow)"/>
+            <text class="dg-link-label" x="437" y="101" text-anchor="middle" style="font-size:15px">conector</text>
 
-        <h3>3.3 · Robot Maqueen (DFRobot)</h3>
-        <p>El Maqueen es un chasis robótico pensado para el micro:bit: dos motores independientes (uno por rueda), un sensor ultrasónico de distancia, dos LEDs auxiliares y sensores de seguimiento de línea. El micro:bit se conecta a él por el conector de borde y le habla por <strong>I2C</strong>, un protocolo de comunicación de corta distancia muy habitual entre microcontroladores y periféricos.</p>
-
-        <h3>3.4 · Web Bluetooth API</h3>
-        <p>Es la API que permite que una página web, con JavaScript normal, se conecte directamente a un dispositivo Bluetooth cercano — sin aplicaciones nativas, sin instalar nada. Por motivos de seguridad y privacidad, solo funciona en páginas servidas por <strong>HTTPS</strong> (o en <code style="font:600 13px var(--mono)">localhost</code>) y solo se puede iniciar la búsqueda de dispositivos tras una acción directa de la persona usuaria, como pulsar un botón. Es compatible con Chrome y Edge en Android, Windows, macOS y ChromeOS; Safari (iPhone/iPad) no la soporta.</p>
+            <g class="dg-node" data-key="movil" tabindex="0" role="button" aria-label="Móvil">
+              <rect class="dg-box" x="10" y="60" width="150" height="110" rx="18"/>
+              <text x="85" y="111" text-anchor="middle" font-size="24">Móvil</text>
+              <text class="dg-sub" x="85" y="139" text-anchor="middle" font-size="16">app de control</text>
+            </g>
+            <g class="dg-node" data-key="microbit" tabindex="0" role="button" aria-label="micro:bit">
+              <rect class="dg-box" x="245" y="60" width="150" height="110" rx="18"/>
+              <text x="320" y="111" text-anchor="middle" font-size="24">micro:bit</text>
+              <text class="dg-sub" x="320" y="139" text-anchor="middle" font-size="16">el cerebro</text>
+            </g>
+            <g class="dg-node" data-key="maqueen" tabindex="0" role="button" aria-label="Maqueen">
+              <rect class="dg-box" x="480" y="35" width="150" height="160" rx="18"/>
+              <text x="555" y="84" text-anchor="middle" font-size="24">Maqueen</text>
+              <text class="dg-sub" x="555" y="114" text-anchor="middle" font-size="16">Motores</text>
+              <text class="dg-sub" x="555" y="138" text-anchor="middle" font-size="16">Sensor</text>
+              <text class="dg-sub" x="555" y="162" text-anchor="middle" font-size="16">Luces</text>
+            </g>
+          </svg>
+          <div class="diagram-detail" id="diagramDetail"><b>Toca una pieza</b><p>Pulsa el móvil, el micro:bit o el Maqueen para ver qué hace cada uno.</p></div>
+        </div>
       </div>
     </section>
 
-    <!-- ================= 4. ARQUITECTURA ================= -->
-    <section class="sec" id="arquitectura" data-title="Arquitectura del sistema">
+    <!-- ================= 4. CÓMO FUNCIONA ================= -->
+    <section class="sec" id="funcionamiento" data-title="Cómo funciona">
       <div class="sec-head reveal">
-        <div class="sec-kicker"><span class="toc-num">4</span><span>Arquitectura</span><span class="readtime" data-readtime></span></div>
-        <h2 class="sec-title">Cómo viaja una orden desde el dedo hasta la rueda</h2>
+        <div class="sec-kicker"><span class="toc-num">4</span><span>Funcionamiento</span><span class="readtime" data-readtime></span></div>
+        <h2 class="sec-title">Qué pasa cuando pulsas un botón</h2>
       </div>
       <div class="sec-body reveal">
-        <p>Cuando se pulsa "Avanzar" en la app, ocurre esta secuencia, de principio a fin:</p>
         <div class="test-list">
-          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>1. El móvil escribe el comando</b><p>La app codifica el texto <code>"avanzar\n"</code> en UTF-8 y lo escribe en la característica Bluetooth del micro:bit que admite escritura.</p></div></div>
-          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>2. El micro:bit detecta el salto de línea</b><p>Su programa está escuchando el servicio UART; en cuanto ve el <code>\n</code>, da por terminado el comando y lo compara con los que conoce.</p></div></div>
-          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>3. Llama al bloque de Maqueen correspondiente</b><p>Para "avanzar", ejecuta <code>motorRun</code> en ambas ruedas hacia delante, a la velocidad guardada.</p></div></div>
-          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>4. El Maqueen mueve los motores</b><p>Todo esto ocurre en milisegundos: el retardo percibido entre pulsar y que el coche se mueva es casi instantáneo.</p></div></div>
+          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>1. Pulsas un botón en la app</b><p>Por ejemplo, la flecha de avanzar.</p></div></div>
+          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>2. El móvil envía una orden</b><p>Manda por Bluetooth una palabra, como <code>avanzar</code>.</p></div></div>
+          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>3. El micro:bit la entiende</b><p>Su programa compara la palabra con las órdenes que conoce.</p></div></div>
+          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>4. El coche se mueve</b><p>El micro:bit enciende los motores en la dirección correcta. Al soltar el botón, la app envía <code>parar</code>.</p></div></div>
         </div>
       </div>
     </section>
@@ -599,56 +589,27 @@ footer.page-foot .fs { flex: 1; }
         <h2 class="sec-title">Programación del micro:bit</h2>
       </div>
       <div class="sec-body reveal">
-        <p>El micro:bit se programa en <a href="https://makecode.microbit.org" target="_blank" rel="noopener">MakeCode</a> con dos extensiones añadidas: <strong>Bluetooth</strong> (built-in) y <strong>Maqueen</strong> (de DFRobot). La lógica se reparte en tres bloques de evento:</p>
+        <p>El micro:bit se programa con <a href="https://makecode.microbit.org" target="_blank" rel="noopener">MakeCode</a>, una web donde se programa con bloques. Añadí dos extensiones: <strong>Bluetooth</strong> y <strong>Maqueen</strong>. El programa tiene tres partes:</p>
         <ul class="plain" style="display:flex;flex-direction:column;gap:8px;margin:16px 0">
-          <li>· <strong>Al iniciar</strong> — arranca el servicio UART y deja el coche parado y las luces apagadas.</li>
-          <li>· <strong>Al recibir datos UART</strong> — lee el texto hasta el salto de línea y decide qué hacer según el comando.</li>
-          <li>· <strong>Por siempre</strong> — vigila el sensor ultrasónico y frena solo si el modo "seguridad" está activo.</li>
+          <li>· <strong>Al iniciar:</strong> activa el Bluetooth y deja el coche parado.</li>
+          <li>· <strong>Al recibir una orden:</strong> mira qué palabra ha llegado y hace lo que corresponde.</li>
+          <li>· <strong>Por siempre:</strong> si el modo seguridad está activado y hay algo a menos de 10 cm, frena.</li>
         </ul>
-        <p>La tabla de comandos que entiende el programa es exactamente la misma que envía la app:</p>
+        <p>Estas son las órdenes que entiende el coche:</p>
         <div class="table-wrap"><table class="cmds">
-          <thead><tr><th>Comando</th><th>Cuándo se envía</th></tr></thead>
+          <thead><tr><th>Orden</th><th>Qué hace</th></tr></thead>
           <tbody>
-            <tr><td><code>avanzar</code></td><td>Flecha ↑ pulsada</td></tr>
-            <tr><td><code>atras</code></td><td>Flecha ↓ pulsada</td></tr>
-            <tr><td><code>izquierda</code></td><td>Flecha ← pulsada</td></tr>
-            <tr><td><code>derecha</code></td><td>Flecha → pulsada</td></tr>
-            <tr><td><code>parar</code></td><td>Al soltar, pulsar PARAR, conectar o desconectar</td></tr>
-            <tr><td><code>vel0</code> … <code>vel100</code></td><td>Al mover el deslizador de velocidad</td></tr>
-            <tr><td><code>bocina</code></td><td>Botón Bocina</td></tr>
-            <tr><td><code>luces</code></td><td>Botón Luces (alterna ON/OFF)</td></tr>
-            <tr><td><code>seguridad</code></td><td>Botón Seguridad (alterna el frenado automático)</td></tr>
+            <tr><td><code>avanzar</code></td><td>El coche va hacia delante</td></tr>
+            <tr><td><code>atras</code></td><td>El coche va hacia atrás</td></tr>
+            <tr><td><code>izquierda</code></td><td>Gira a la izquierda</td></tr>
+            <tr><td><code>derecha</code></td><td>Gira a la derecha</td></tr>
+            <tr><td><code>parar</code></td><td>Se detiene</td></tr>
+            <tr><td><code>vel</code> + número</td><td>Cambia la velocidad, de 0 a 100 (por ejemplo, <code>vel75</code>)</td></tr>
+            <tr><td><code>bocina</code></td><td>Hace sonar un pitido</td></tr>
+            <tr><td><code>luces</code></td><td>Enciende o apaga las luces</td></tr>
+            <tr><td><code>seguridad</code></td><td>Activa o desactiva el frenado automático</td></tr>
           </tbody>
         </table></div>
-
-        <details class="code-card">
-          <summary>main.ts — programa completo del micro:bit <span class="copy-btn" data-copy="code-microbit"><svg class="ic"><use href="#i-copy"/></svg>Copiar</span><svg class="ic chev"><use href="#i-arrow"/></svg></summary>
-          <pre id="code-microbit"><code>let velocidad = 60
-let movimiento = "parar"
-let seguridadOn = false
-let lucesOn = false
-const DISTANCIA_MIN = 10   <span class="c">// cm — distancia de frenada</span>
-
-bluetooth.onUartDataReceived(serial.delimiters(Delimiters.NewLine), function () {
-    let cmd = bluetooth.uartReadUntil(serial.delimiters(Delimiters.NewLine)).trim()
-    <span class="k">if</span> (cmd == <span class="s">"avanzar"</span>) { movimiento = <span class="s">"avanzar"</span>; <span class="f">maqueen.motorRun</span>(maqueen.Motors.All, maqueen.Dir.CW, velocidad * 255 / 100) }
-    <span class="k">else if</span> (cmd == <span class="s">"parar"</span>) { movimiento = <span class="s">"parar"</span>; <span class="f">maqueen.motorStop</span>(maqueen.Motors.All) }
-    <span class="k">else if</span> (cmd.substr(0, 3) == <span class="s">"vel"</span>) { velocidad = parseFloat(cmd.substr(3)) }
-    <span class="k">else if</span> (cmd == <span class="s">"seguridad"</span>) { seguridadOn = !seguridadOn }
-    <span class="c">// ... atras, izquierda, derecha, bocina, luces (ver memoria completa en el repositorio)</span>
-})
-
-basic.forever(function () {
-    <span class="k">if</span> (seguridadOn && movimiento == <span class="s">"avanzar"</span> && <span class="f">maqueen.Ultrasonic</span>() &lt; DISTANCIA_MIN) {
-        <span class="f">maqueen.motorStop</span>(maqueen.Motors.All)
-        movimiento = <span class="s">"parar"</span>
-    }
-})
-
-bluetooth.onBluetoothDisconnected(function () { <span class="f">maqueen.motorStop</span>(maqueen.Motors.All) })
-bluetooth.startUartService()</code></pre>
-        </details>
-        <p style="font-size:12.5px;color:var(--muted)">⚠️ Ajuste imprescindible: en MakeCode, icono ⚙️ → <em>Configuración del proyecto</em> → activar <strong>"No se requiere emparejamiento"</strong>, para que el móvil conecte sin pedir un código.</p>
       </div>
     </section>
 
@@ -659,10 +620,18 @@ bluetooth.startUartService()</code></pre>
         <h2 class="sec-title">La app de control</h2>
       </div>
       <div class="sec-body reveal">
-        <p>La app (<code style="font:600 13px var(--mono)">index.html</code>) es un único archivo autocontenido — HTML, CSS y JavaScript, sin frameworks — pensado para abrirse con doble clic o publicarse en GitHub Pages. Se organiza en una clase <code style="font:600 13px var(--mono)">MicrobitUART</code> que gestiona toda la conexión Bluetooth, y una capa de interfaz con animaciones premium: glassmorphism, controles con profundidad 3D, y una intro animada de unos 5 segundos.</p>
+        <p>La app es una página web en un solo archivo. El <strong>HTML</strong> forma la estructura, el <strong>CSS</strong> le da el aspecto y el <strong>JavaScript</strong> se encarga de conectar por Bluetooth y enviar las órdenes. Para escribir el código me ayudé de Claude, una IA, y de lo que aprendí en un curso básico de programación.</p>
+        <p>La app tiene:</p>
+        <ul class="plain" style="display:flex;flex-direction:column;gap:8px;margin:12px 0 8px">
+          <li>· Un botón para <strong>conectar</strong> con el coche.</li>
+          <li>· Unas <strong>flechas</strong>: mientras mantienes una pulsada, el coche se mueve; al soltarla, para.</li>
+          <li>· Un botón rojo de <strong>PARAR</strong>.</li>
+          <li>· Un <strong>deslizador</strong> para la velocidad.</li>
+          <li>· Botones de <strong>bocina</strong>, <strong>luces</strong> y <strong>seguridad</strong>.</li>
+        </ul>
 
-        <h3>Prueba el protocolo tú mismo</h3>
-        <p>Este panel es una <strong>simulación</strong>: no usa Bluetooth real, pero genera exactamente el mismo texto que la app de verdad manda al micro:bit. Pulsa los controles y observa el registro de comandos.</p>
+        <h3>Pruébalo aquí</h3>
+        <p>Pulsa los botones y verás la orden que la app enviaría al coche. Es solo una simulación: no se conecta a nada.</p>
         <div class="card sim-card">
           <div class="sim-grid">
             <div class="sim-pad">
@@ -673,7 +642,7 @@ bluetooth.startUartService()</code></pre>
                 <button class="mp-btn right" data-cmd="derecha" aria-label="Derecha"><svg class="ic" style="transform:rotate(90deg)"><use href="#i-up"/></svg></button>
                 <button class="mp-btn down" data-cmd="atras" aria-label="Atrás"><svg class="ic" style="transform:rotate(180deg)"><use href="#i-up"/></svg></button>
               </div>
-              <div class="sim-speed"><input type="range" id="miniSpeed" min="0" max="100" value="60"><b id="miniSpeedVal">60</b></div>
+              <div class="sim-speed"><input type="range" id="miniSpeed" min="0" max="100" value="60" aria-label="Velocidad"><b id="miniSpeedVal">60</b></div>
               <div class="sim-extras">
                 <button class="sim-xbtn" id="simHorn" data-cmd="bocina"><svg class="ic"><use href="#i-horn"/></svg>Bocina</button>
                 <button class="sim-xbtn" id="simLights" data-cmd="luces"><svg class="ic"><use href="#i-lights"/></svg>Luces</button>
@@ -688,14 +657,14 @@ bluetooth.startUartService()</code></pre>
                 <div class="sim-wire"><i id="wireDot2"></i></div>
                 <div class="sim-node" id="snMaqueen"><span class="dot"><svg class="ic"><use href="#i-car"/></svg></span>Maqueen</div>
               </div>
-              <div class="sim-log" id="simLog"><div class="empty">Pulsa un control para ver el comando que se enviaría…</div></div>
+              <div class="sim-log" id="simLog"><div class="empty">Pulsa un control para ver la orden que se enviaría…</div></div>
               <button class="sim-clear" id="simClear"><svg class="ic"><use href="#i-trash"/></svg>Limpiar registro</button>
             </div>
           </div>
         </div>
 
-        <h3>Cómo se hizo la animación de bienvenida</h3>
-        <p>La intro (logo 3D → modo "programación" en verde → explosión de partículas) no usa vídeos ni imágenes: es <strong>SVG animado por código</strong> más un <code style="font:600 13px var(--mono)">&lt;canvas&gt;</code> para las partículas, todo coordinado por una única "línea de tiempo maestra" en <code style="font:600 13px var(--mono)">requestAnimationFrame</code>. Aquí tienes una versión reducida, en directo:</p>
+        <h3>La animación de inicio</h3>
+        <p>Al abrir la app aparece una animación con el logo, hecha con código. Aquí tienes una versión corta:</p>
         <div class="card intro-demo-card">
           <div class="intro-demo-box" id="introDemoBox">
             <svg viewBox="0 0 260 160" id="demoLogoSvg" aria-hidden="true">
@@ -711,139 +680,88 @@ bluetooth.startUartService()</code></pre>
           </div>
           <button class="btn primary" id="playIntroDemo"><svg class="ic"><use href="#i-zap"/></svg> Reproducir animación</button>
         </div>
-
-        <h3>Técnicas de rendimiento usadas</h3>
-        <div class="grid-2">
-          <div class="info-card card"><div class="ic-head"><span class="ic-icon"><svg class="ic"><use href="#i-gauge"/></svg></span><h4>Solo transform / opacity</h4></div><p>Lo mueve la tarjeta gráfica (GPU), sin recalcular el diseño de toda la página en cada fotograma.</p></div>
-          <div class="info-card card"><div class="ic-head"><span class="ic-icon"><svg class="ic"><use href="#i-zap"/></svg></span><h4>Una sola línea de tiempo</h4></div><p>Un reloj <code style="font:600 12px var(--mono)">t</code> controla todas las fases a la vez; se puede saltar la intro sin descoordinar nada.</p></div>
-        </div>
       </div>
     </section>
 
-    <!-- ================= 7. PRUEBAS ================= -->
-    <section class="sec" id="pruebas" data-title="Pruebas realizadas">
+    <!-- ================= 7. PRUEBAS Y RESULTADOS ================= -->
+    <section class="sec" id="resultados" data-title="Pruebas y resultados">
       <div class="sec-head reveal">
-        <div class="sec-kicker"><span class="toc-num">7</span><span>Pruebas</span><span class="readtime" data-readtime></span></div>
-        <h2 class="sec-title">Pruebas realizadas</h2>
+        <div class="sec-kicker"><span class="toc-num">7</span><span>Resultados</span><span class="readtime" data-readtime></span></div>
+        <h2 class="sec-title">Pruebas y resultados</h2>
       </div>
       <div class="sec-body reveal">
-        <p>Antes de probar con el coche real, la app se validó con un micro:bit <strong>simulado</strong> (se sustituye <code style="font:600 13px var(--mono)">navigator.bluetooth</code> por una versión de prueba que registra todo lo que se escribe), para comprobar el protocolo sin depender del hardware.</p>
-        <div class="stat-grid">
-          <div class="stat-card card"><b id="statTests">24/24</b><span>comprobaciones superadas</span></div>
-          <div class="stat-card card"><b>16,7 ms</b><span>tiempo medio de fotograma</span></div>
-          <div class="stat-card card"><b>0</b><span>escrituras simultáneas</span></div>
-          <div class="stat-card card"><b>4</b><span>tamaños de pantalla probados</span></div>
-        </div>
+        <p>Se comprobó que:</p>
         <div class="test-list">
-          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Protocolo Bluetooth</b><p>Filtro de nombre correcto, UUIDs válidos, comandos exactos (<code>avanzar\n</code>, <code>vel75\n</code>…), sin escrituras concurrentes, coalescencia de comandos repetidos.</p></div></div>
-          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Reconexión automática</b><p>Al simular una desconexión brusca, la app reintenta sola y, si no lo consigue, muestra un aviso con el botón "Reconectar".</p></div></div>
-          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>"Hombre muerto"</b><p>Si la app pasa a segundo plano mientras el coche avanza, se envía <code>parar</code> automáticamente.</p></div></div>
-          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Responsive</b><p>Sin desbordamiento horizontal en móvil pequeño (360px), móvil estándar, horizontal y ordenador/proyector.</p></div></div>
-          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Rendimiento</b><p>Con la CPU limitada ×4 (para simular un móvil de gama media), la intro mantiene una mediana de 16,7 ms por fotograma — el equivalente a 60 imágenes por segundo.</p></div></div>
-          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Accesibilidad</b><p>Con "reducir movimiento" activado en el sistema operativo, la intro se acorta automáticamente y se eliminan los efectos de paralaje.</p></div></div>
+          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Cada botón envía su orden</b><p>Por ejemplo, la flecha de arriba envía <code>avanzar</code>.</p></div></div>
+          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Al soltar, el coche para</b><p>Al soltar una flecha, la app envía <code>parar</code>.</p></div></div>
+          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Si se corta la conexión, avisa</b><p>La app intenta reconectar sola y, si no puede, muestra un aviso.</p></div></div>
+          <div class="test-item card"><span class="ti-ic"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Se ve bien en cualquier pantalla</b><p>En móvil, con el móvil en horizontal y en el ordenador.</p></div></div>
         </div>
-      </div>
-    </section>
-
-    <!-- ================= 8. RESULTADOS ================= -->
-    <section class="sec" id="resultados" data-title="Resultados">
-      <div class="sec-head reveal">
-        <div class="sec-kicker"><span class="toc-num">8</span><span>Resultados</span><span class="readtime" data-readtime></span></div>
-        <h2 class="sec-title">Resultados</h2>
-      </div>
-      <div class="sec-body reveal">
-        <p>Capturas reales de la app funcionando — toca cualquiera para ampliarla.</p>
+        <h3 style="margin-top:28px">Capturas de la app</h3>
+        <p>Toca cualquiera para verla en grande.</p>
         <div class="gallery" id="gallery">
-          <figure data-full="assets/memoria/intro-blue.png"><img src="assets/memoria/intro-blue.png" alt="Logo azul metálico de la intro" loading="lazy"><figcaption>Intro · logo inicial</figcaption></figure>
-          <figure data-full="assets/memoria/intro-green.png"><img src="assets/memoria/intro-green.png" alt="Logo verde en modo programación" loading="lazy"><figcaption>Intro · modo programación</figcaption></figure>
-          <figure data-full="assets/memoria/app-connected.png"><img src="assets/memoria/app-connected.png" alt="App conectada al coche" loading="lazy"><figcaption>App · conectada</figcaption></figure>
-          <figure data-full="assets/memoria/app-light.png"><img src="assets/memoria/app-light.png" alt="App en tema claro" loading="lazy"><figcaption>App · tema claro</figcaption></figure>
-          <figure data-full="assets/memoria/welcome.png"><img src="assets/memoria/welcome.png" alt="Diálogo de bienvenida" loading="lazy"><figcaption>Bienvenida</figcaption></figure>
-          <figure data-full="assets/memoria/tour.png"><img src="assets/memoria/tour.png" alt="Guía paso a paso" loading="lazy"><figcaption>Guía interactiva</figcaption></figure>
+          <figure data-full="assets/memoria/intro-blue.png"><img src="assets/memoria/intro-blue.png" alt="Logo azul de la animación de inicio" loading="lazy"><figcaption>Animación de inicio</figcaption></figure>
+          <figure data-full="assets/memoria/intro-green.png"><img src="assets/memoria/intro-green.png" alt="Logo verde de la animación de inicio" loading="lazy"><figcaption>Animación · en verde</figcaption></figure>
+          <figure data-full="assets/memoria/app-connected.png"><img src="assets/memoria/app-connected.png" alt="App conectada al coche" loading="lazy"><figcaption>App conectada</figcaption></figure>
+          <figure data-full="assets/memoria/app-light.png"><img src="assets/memoria/app-light.png" alt="App en tema claro" loading="lazy"><figcaption>Tema claro</figcaption></figure>
+          <figure data-full="assets/memoria/welcome.png"><img src="assets/memoria/welcome.png" alt="Pantalla de bienvenida" loading="lazy"><figcaption>Bienvenida</figcaption></figure>
+          <figure data-full="assets/memoria/tour.png"><img src="assets/memoria/tour.png" alt="Guía paso a paso" loading="lazy"><figcaption>Guía de uso</figcaption></figure>
         </div>
       </div>
     </section>
 
-    <!-- ================= 9. CONCLUSIONES ================= -->
-    <section class="sec" id="conclusiones" data-title="Conclusiones y mejoras futuras">
+    <!-- ================= 8. CONCLUSIONES ================= -->
+    <section class="sec" id="conclusiones" data-title="Conclusiones">
       <div class="sec-head reveal">
-        <div class="sec-kicker"><span class="toc-num">9</span><span>Conclusiones</span><span class="readtime" data-readtime></span></div>
-        <h2 class="sec-title">Conclusiones y mejoras futuras</h2>
+        <div class="sec-kicker"><span class="toc-num">8</span><span>Conclusiones</span><span class="readtime" data-readtime></span></div>
+        <h2 class="sec-title">Conclusiones</h2>
       </div>
       <div class="sec-body reveal">
-        <p>El proyecto demuestra que es posible construir, con herramientas accesibles para bachillerato, un sistema completo de control remoto que conecta electrónica física y desarrollo web moderno. Entre los aprendizajes más valiosos: la importancia de <strong>verificar el comportamiento real del hardware</strong> (el caso de las características BLE invertidas), de diseñar <strong>mecanismos de seguridad por defecto</strong> (parar ante cualquier fallo, nunca seguir a ciegas), y de que el rendimiento de una animación depende más de <em>qué</em> propiedades se animan que de cuántos efectos se añaden.</p>
-        <h3>Posibles ampliaciones</h3>
+        <p>El coche se maneja desde el móvil y tiene medidas de seguridad. Con este proyecto he aprendido a programar el micro:bit con bloques, cómo se comunican dos aparatos por Bluetooth y cómo se hace una página web.</p>
+        <h3>Ideas para mejorarlo</h3>
         <div class="future-list">
-          <div class="future-item card"><span class="fi-ic"><svg class="ic"><use href="#i-rocket"/></svg></span><div><b>Modo autónomo</b><p>Usar los sensores de línea del Maqueen para que el coche siga un circuito sin intervención humana.</p></div></div>
-          <div class="future-item card"><span class="fi-ic"><svg class="ic"><use href="#i-rocket"/></svg></span><div><b>App instalable (PWA)</b><p>Convertir index.html en una aplicación instalable en el móvil, con icono propio y funcionamiento sin conexión a internet.</p></div></div>
-          <div class="future-item card"><span class="fi-ic"><svg class="ic"><use href="#i-rocket"/></svg></span><div><b>Telemetría</b><p>Registrar velocidad, distancia recorrida y frenadas de emergencia para analizarlas después, como una "caja negra" educativa.</p></div></div>
-          <div class="future-item card"><span class="fi-ic"><svg class="ic"><use href="#i-rocket"/></svg></span><div><b>Modo carreras</b><p>Controlar dos coches a la vez desde dos móviles distintos y cronometrar vueltas.</p></div></div>
+          <div class="future-item card"><span class="fi-ic"><svg class="ic"><use href="#i-rocket"/></svg></span><div><b>Modo automático</b><p>Que el coche siga una línea pintada en el suelo, usando los sensores que ya tiene.</p></div></div>
+          <div class="future-item card"><span class="fi-ic"><svg class="ic"><use href="#i-rocket"/></svg></span><div><b>Instalarla como app</b><p>Que se pueda instalar en el móvil con su propio icono.</p></div></div>
+          <div class="future-item card"><span class="fi-ic"><svg class="ic"><use href="#i-rocket"/></svg></span><div><b>Carreras</b><p>Controlar dos coches desde dos móviles y cronometrar quién gana.</p></div></div>
         </div>
       </div>
     </section>
 
-    <!-- ================= 10. QUIZ ================= -->
+    <!-- ================= 9. QUIZ ================= -->
     <section class="sec" id="quiz" data-title="Pon a prueba lo aprendido">
       <div class="sec-head reveal">
-        <div class="sec-kicker"><span class="toc-num">10</span><span>Autoevaluación</span><span class="readtime" data-readtime></span></div>
+        <div class="sec-kicker"><span class="toc-num">9</span><span>Autoevaluación</span><span class="readtime" data-readtime></span></div>
         <h2 class="sec-title">Pon a prueba lo aprendido</h2>
-        <p style="margin-top:8px">8 preguntas sobre los conceptos clave del proyecto. Tu resultado se guarda en este navegador.</p>
+        <p style="margin-top:8px">6 preguntas sencillas sobre el proyecto. Tu resultado se guarda en este navegador.</p>
       </div>
       <div class="sec-body reveal">
         <div class="card quiz-card" id="quizCard">
-          <div class="quiz-progress-wrap"><div class="bar"><i id="quizBar"></i></div><span id="quizCount">1 / 8</span></div>
+          <div class="quiz-progress-wrap"><div class="bar"><i id="quizBar"></i></div><span id="quizCount">1 / 6</span></div>
           <div id="quizStage"></div>
         </div>
       </div>
     </section>
 
-    <!-- ================= 11. BIBLIOGRAFÍA ================= -->
+    <!-- ================= 10. BIBLIOGRAFÍA ================= -->
     <section class="sec" id="biblio" data-title="Bibliografía">
       <div class="sec-head reveal">
-        <div class="sec-kicker"><span class="toc-num">11</span><span>Fuentes</span><span class="readtime" data-readtime></span></div>
-        <h2 class="sec-title">Bibliografía y referencias</h2>
+        <div class="sec-kicker"><span class="toc-num">10</span><span>Fuentes</span><span class="readtime" data-readtime></span></div>
+        <h2 class="sec-title">Bibliografía</h2>
       </div>
       <div class="sec-body reveal">
         <div class="card" style="padding:6px 18px">
           <ul class="plain biblio-list">
-            <li class="biblio-item"><span class="bi-n">01</span><div><a href="https://makecode.microbit.org/reference/bluetooth" target="_blank" rel="noopener">MakeCode — Bluetooth Service (microbit.org)</a><p>Referencia oficial del servicio Bluetooth UART del micro:bit.</p></div></li>
-            <li class="biblio-item"><span class="bi-n">02</span><div><a href="https://github.com/DFRobot/pxt-maqueen" target="_blank" rel="noopener">DFRobot/pxt-maqueen (GitHub)</a><p>Código fuente de la extensión Maqueen para MakeCode.</p></div></li>
-            <li class="biblio-item"><span class="bi-n">03</span><div><a href="https://developer.mozilla.org/docs/Web/API/Web_Bluetooth_API" target="_blank" rel="noopener">MDN — Web Bluetooth API</a><p>Documentación de la API usada por la app para conectar con el micro:bit.</p></div></li>
-            <li class="biblio-item"><span class="bi-n">04</span><div><a href="https://www.bluetooth.com/specifications/specs/" target="_blank" rel="noopener">Bluetooth SIG — Especificaciones GATT</a><p>Define cómo funcionan servicios y características en BLE.</p></div></li>
-            <li class="biblio-item"><span class="bi-n">05</span><div><a href="https://microbit.org/get-started/user-guide/overview/" target="_blank" rel="noopener">micro:bit.org — Guía de usuario</a><p>Características técnicas de la placa BBC micro:bit v2.</p></div></li>
+            <li class="biblio-item"><span class="bi-n">01</span><div><a href="https://makecode.microbit.org" target="_blank" rel="noopener">MakeCode para micro:bit</a><p>La web donde se programa el micro:bit con bloques.</p></div></li>
+            <li class="biblio-item"><span class="bi-n">02</span><div><a href="https://microbit.org/get-started/user-guide/overview/" target="_blank" rel="noopener">micro:bit.org — Guía de usuario</a><p>Qué es y qué tiene la placa micro:bit.</p></div></li>
+            <li class="biblio-item"><span class="bi-n">03</span><div><a href="https://github.com/DFRobot/pxt-maqueen" target="_blank" rel="noopener">DFRobot — Extensión Maqueen</a><p>Los bloques de MakeCode para controlar el robot Maqueen.</p></div></li>
+            <li class="biblio-item"><span class="bi-n">04</span><div><a href="https://developer.mozilla.org/docs/Web/API/Web_Bluetooth_API" target="_blank" rel="noopener">MDN — Web Bluetooth</a><p>Cómo una página web puede conectarse por Bluetooth.</p></div></li>
           </ul>
         </div>
-        <p style="font-size:12px;color:var(--muted);margin-top:14px">📌 Si tu profesor/a pide datos estadísticos sobre seguridad vial (accidentalidad, edad de los conductores, etc.), añádelos aquí citando una fuente oficial como la <a href="https://www.dgt.es" target="_blank" rel="noopener">DGT</a> o la OMS — no se han incluido cifras concretas en esta memoria para no citar datos sin verificar.</p>
-      </div>
-    </section>
-
-    <!-- ================= ANEXO ================= -->
-    <section class="sec" id="anexo" data-title="Anexo: comandos">
-      <div class="sec-head reveal">
-        <div class="sec-kicker"><span class="toc-num">A</span><span>Anexo</span><span class="readtime" data-readtime></span></div>
-        <h2 class="sec-title">Anexo: tabla completa de comandos</h2>
-      </div>
-      <div class="sec-body reveal">
-        <p>Para cuadrar la app con el programa del micro:bit en MakeCode. Enlace al repositorio y a la app: <a href="index.html">abrir index.html</a>.</p>
-        <div class="table-wrap"><table class="cmds">
-          <thead><tr><th>Comando</th><th>Formato</th><th>Descripción</th></tr></thead>
-          <tbody>
-            <tr><td><code>avanzar</code></td><td>texto + \n</td><td>Mueve el coche hacia delante mientras se mantiene pulsado</td></tr>
-            <tr><td><code>atras</code></td><td>texto + \n</td><td>Mueve el coche hacia atrás</td></tr>
-            <tr><td><code>izquierda</code></td><td>texto + \n</td><td>Gira a la izquierda sobre su eje</td></tr>
-            <tr><td><code>derecha</code></td><td>texto + \n</td><td>Gira a la derecha sobre su eje</td></tr>
-            <tr><td><code>parar</code></td><td>texto + \n</td><td>Frena inmediatamente (botón de emergencia)</td></tr>
-            <tr><td><code>vel&lt;0-100&gt;</code></td><td>p.ej. <code>vel75</code></td><td>Fija la velocidad del 0 al 100%</td></tr>
-            <tr><td><code>bocina</code></td><td>texto + \n</td><td>Hace sonar el zumbador un instante</td></tr>
-            <tr><td><code>luces</code></td><td>texto + \n</td><td>Alterna las luces/intermitentes ON/OFF</td></tr>
-            <tr><td><code>seguridad</code></td><td>texto + \n</td><td>Alterna el frenado automático por sensor ON/OFF</td></tr>
-          </tbody>
-        </table></div>
       </div>
     </section>
 
     <footer class="page-foot">
-      <span class="fs">Memoria generada para el proyecto <strong>Seguridad Vial con micro:bit</strong>.</span>
+      <span class="fs">Memoria del proyecto <strong>Seguridad Vial con micro:bit</strong>.</span>
       <a href="index.html">Abrir la app de control →</a>
     </footer>
   </main>
@@ -1003,9 +921,9 @@ metaFields.forEach(f => {
 
 /* ---------- 6. Diagrama de arquitectura interactivo ---------- */
 const DIAGRAM_INFO = {
-  movil: { t: 'El móvil (navegador Chrome)', d: 'Ejecuta la app web. Usa la Web Bluetooth API para buscar el micro:bit, conectarse y escribir comandos de texto en su característica Bluetooth.' },
-  microbit: { t: 'El micro:bit', d: 'Recibe el texto por el servicio UART, lo interpreta con el programa de MakeCode y llama a los bloques de Maqueen según el comando recibido.' },
-  maqueen: { t: 'El robot Maqueen', d: 'Chasis con dos motores, sensor ultrasónico y LEDs, controlado por el micro:bit a través del protocolo I2C.' },
+  movil: { t: 'El móvil', d: 'En él se abre la app de control. Cuando pulsas un botón, envía la orden al coche por Bluetooth.' },
+  microbit: { t: 'El micro:bit', d: 'Es el cerebro del coche: recibe la orden, la entiende y controla los motores, el sensor y las luces.' },
+  maqueen: { t: 'El robot Maqueen', d: 'Es el coche en sí: dos ruedas con motor, un sensor que mide la distancia y luces.' },
 };
 const diagramDetail = $('#diagramDetail');
 $$('.dg-node', $('#archDiagram')).forEach(node => {
@@ -1066,7 +984,7 @@ $('#simHorn').addEventListener('click', () => logCmd('bocina'));
   const btn = $('#' + id);
   btn.addEventListener('click', () => { btn.classList.toggle('on'); logCmd(btn.dataset.cmd); });
 });
-$('#simClear').addEventListener('click', () => { simLog.innerHTML = '<div class="empty">Pulsa un control para ver el comando que se enviaría…</div>'; simLogged = false; });
+$('#simClear').addEventListener('click', () => { simLog.innerHTML = '<div class="empty">Pulsa un control para ver la orden que se enviaría…</div>'; simLogged = false; });
 
 /* ---------- 8. Mini reproducción de la intro ---------- */
 (() => {
@@ -1153,14 +1071,12 @@ addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
 /* ---------- 11. Quiz de autoevaluación ---------- */
 const QUIZ = [
-  { q: '¿Qué significa BLE?', opts: ['Bluetooth Low Energy', 'Basic Link Encoding', 'Bluetooth Local Emitter', 'Binary Line Exchange'], c: 0, ex: 'BLE (Bluetooth Low Energy) es la versión de Bluetooth pensada para dispositivos de bajo consumo, como el micro:bit.' },
-  { q: '¿Qué hace el servicio UART del micro:bit?', opts: ['Mide la temperatura', 'Enciende la pantalla de LEDs', 'Simula un puerto serie para enviar y recibir texto por Bluetooth', 'Conecta con el WiFi'], c: 2, ex: 'UART imita un cable serie clásico: permite mandar texto (nuestros comandos) por Bluetooth.' },
-  { q: '¿Por qué cada comando que manda la app termina en un salto de línea (\\n)?', opts: ['Por estética', 'Porque el micro:bit lee el texto hasta encontrar ese carácter y sabe que ahí acaba el comando', 'Es obligatorio en todo mensaje Bluetooth', 'Para separar mayúsculas de minúsculas'], c: 1, ex: 'El bloque de MakeCode "leer UART hasta Nueva línea" corta el texto justo en el \\n.' },
-  { q: 'En el micro:bit real, ¿qué característica BLE usa la app para ESCRIBIR comandos?', opts: ['6e400001', '6e400002', '6e400003', 'Da igual, cualquiera vale'], c: 2, ex: 'Aunque el estándar genérico dice lo contrario, en el micro:bit real la 6e400003 es la de escritura (RX). La app elige el canal según sus propiedades, no por el UUID fijo.' },
-  { q: 'Si el coche está avanzando y se corta el Bluetooth, ¿qué debe ocurrir?', opts: ['Sigue avanzando hasta chocar', 'Se para automáticamente', 'Empieza a pitar sin parar', 'No pasa nada, se queda esperando'], c: 1, ex: 'Es una medida de seguridad: tanto la app como el micro:bit están pensados para frenar ante cualquier pérdida de conexión.' },
-  { q: '¿Por qué Web Bluetooth exige HTTPS (o localhost)?', opts: ['Limitación de los móviles Android', 'Por seguridad: evita que una página cualquiera acceda a tus dispositivos Bluetooth sin que lo sepas', 'Para que cargue más rápido', 'No es cierto, funciona igual en HTTP'], c: 1, ex: 'Acceder a hardware del usuario (Bluetooth, cámara, ubicación…) solo se permite en contextos seguros.' },
-  { q: '¿Qué sensor usa el Maqueen para el frenado de emergencia ("seguridad")?', opts: ['Sensor de luz', 'Sensor ultrasónico de distancia', 'Acelerómetro', 'Micrófono'], c: 1, ex: 'El sensor ultrasónico mide la distancia al obstáculo más cercano; si es menor que el umbral, se frena.' },
-  { q: 'Para que la animación de la intro vaya fluida, ¿qué propiedades CSS se animan sobre todo?', opts: ['width y height', 'top y left', 'transform y opacity', 'margin y padding'], c: 2, ex: 'Animar transform/opacity deja que lo mueva la GPU, sin recalcular el diseño de toda la página.' },
+  { q: '¿Qué placa es el "cerebro" del coche?', opts: ['Arduino', 'micro:bit', 'Raspberry Pi', 'No tiene ninguna'], c: 1, ex: 'El micro:bit recibe las órdenes del móvil y controla los motores.' },
+  { q: '¿Cómo se comunican el móvil y el coche?', opts: ['Por cable USB', 'Por WiFi', 'Por Bluetooth', 'Por infrarrojos'], c: 2, ex: 'El móvil envía las órdenes al micro:bit por Bluetooth, sin cables.' },
+  { q: '¿Qué pasa cuando sueltas la flecha de avanzar?', opts: ['El coche sigue avanzando', 'La app envía "parar" y el coche se detiene', 'El coche da marcha atrás', 'Suena la bocina'], c: 1, ex: 'Mientras mantienes la flecha, el coche se mueve; al soltarla, la app envía "parar".' },
+  { q: '¿Qué usa el coche para frenar solo ante un obstáculo?', opts: ['Un sensor de luz', 'Un sensor de distancia por ultrasonidos', 'El micrófono', 'La brújula'], c: 1, ex: 'El sensor de ultrasonidos mide la distancia; si hay algo a menos de 10 cm, el coche frena.' },
+  { q: '¿Con qué se programa el micro:bit en este proyecto?', opts: ['Con MakeCode, usando bloques', 'Con Excel', 'Con Photoshop', 'No hace falta programarlo'], c: 0, ex: 'MakeCode es una web para programar el micro:bit con bloques.' },
+  { q: '¿Qué tres lenguajes forman la app de control?', opts: ['HTML, CSS y JavaScript', 'Python, C y Java', 'Solo HTML', 'Bloques de MakeCode'], c: 0, ex: 'HTML da la estructura, CSS el aspecto y JavaScript hace que funcione.' },
 ];
 const QUIZ_KEY = 'sv-memoria-quiz';
 let qi = 0, qScore = 0, qAnswered = false;
@@ -1200,7 +1116,7 @@ function renderResult() {
   quizBar.style.width = '100%';
   quizCount.textContent = `${QUIZ.length} / ${QUIZ.length}`;
   const pct = Math.round(qScore / QUIZ.length * 100);
-  const msg = pct === 100 ? '¡Perfecto! Dominas el proyecto por completo.' : pct >= 75 ? 'Muy buen nivel, solo algún detalle por repasar.' : pct >= 50 ? 'Vas bien, repasa el marco teórico y la arquitectura.' : 'Repasa las secciones 3 a 6 y vuelve a intentarlo.';
+  const msg = pct === 100 ? '¡Perfecto! Dominas el proyecto por completo.' : pct >= 75 ? 'Muy buen nivel, solo algún detalle por repasar.' : pct >= 50 ? 'Vas bien, repasa cómo funciona el coche.' : 'Repasa la memoria y vuelve a intentarlo.';
   quizStage.innerHTML = `
     <div class="quiz-result">
       <div class="qr-score">${qScore}/${QUIZ.length}</div>
