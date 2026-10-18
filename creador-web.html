@@ -2,6 +2,59 @@
 <html lang="es" data-theme="dark" data-accent="green">
 <head>
 <meta charset="utf-8">
+<!--
+================================================================================
+  AVISO DE AUTORÍA Y LICENCIA · NO ELIMINAR NI MODIFICAR ESTE BLOQUE
+================================================================================
+Required Notice: Copyright (c) 2026 Adrián Bellamy Encinas (losbellamy4@gmail.com)
+Required Notice: Obra original de Adrián Bellamy Encinas. Las versiones modificadas por terceros no son obra suya ni cuentan con su respaldo, y él no responde de ellas.
+Required Notice: Cualquier uso comercial requiere una licencia o un acuerdo escrito previo con el titular (losbellamy4@gmail.com).
+
+  Obra ....... Creador Web · editor web de HTML, CSS y JavaScript (creador-web.html)
+  Titular .... Adrián Bellamy Encinas
+  Contacto ... losbellamy4@gmail.com
+  Licencia ... PolyForm Noncommercial License 1.0.0
+               https://polyformproject.org/licenses/noncommercial/1.0.0
+               (texto completo en el archivo LICENSE que acompaña a este código)
+
+  RESUMEN ORIENTATIVO. No sustituye a la licencia: en caso de duda o de
+  diferencia prevalece el texto oficial de la PolyForm Noncommercial 1.0.0.
+
+  1. Uso sin fines comerciales. Se permite usar, copiar, estudiar, modificar
+     y compartir este código, entero o en parte, solo para fines no
+     comerciales: uso personal, estudio, investigación, aficiones, centros
+     educativos, organizaciones benéficas y administraciones públicas.
+
+  2. Reconocimiento obligatorio. Toda copia, adaptación o versión derivada,
+     total o parcial y con o sin cambios, debe conservar completo y sin
+     alterar este aviso (en especial las líneas «Required Notice») y el texto
+     o el enlace de la licencia. Eliminarlo, ocultarlo o modificarlo es un
+     incumplimiento de la licencia.
+
+  3. Uso comercial. Cualquier uso con ánimo de lucro o del que se obtenga un
+     beneficio económico, directo o indirecto (venderlo, cobrar por usarlo o
+     por acceder a él, incluirlo en un producto, servicio o encargo de pago,
+     o en una web o app con publicidad, entre otros), no está permitido sin
+     un acuerdo económico previo y por escrito con el titular.
+
+  4. Sin garantía ni responsabilidad. El código se entrega «tal cual», sin
+     garantías de ningún tipo. En la medida en que lo permita la ley, el
+     titular no responde de los daños que pueda causar su uso ni de los
+     cambios, versiones o usos que hagan terceros; cada persona responde de
+     sus propias modificaciones y del uso que haga de ellas.
+
+  5. Incumplimiento. Quien incumpla la licencia pierde el permiso de uso,
+     salvo que lo corrija dentro de los 32 días siguientes al primer aviso
+     por escrito del titular.
+
+  6. Derechos reservados. Todo lo que no se concede de forma expresa queda
+     reservado al titular, que puede ofrecer este código con otras
+     condiciones (por ejemplo, una licencia comercial).
+================================================================================
+-->
+<meta name="author" content="Adrián Bellamy Encinas">
+<meta name="copyright" content="© 2026 Adrián Bellamy Encinas · PolyForm Noncommercial 1.0.0 · Uso comercial solo con acuerdo escrito del titular">
+<link rel="license" href="https://polyformproject.org/licenses/noncommercial/1.0.0">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Creador Web</title>
 <meta name="description" content="Editor web para crear páginas con HTML, CSS y JavaScript: carpetas, vista previa, corrector, asistente y memoria automática.">
@@ -49,6 +102,7 @@
 })();
 </script>
 <style>
+/* © 2026 Adrián Bellamy Encinas (losbellamy4@gmail.com) · Licencia PolyForm Noncommercial 1.0.0 · Uso comercial solo con acuerdo escrito del titular. No eliminar este aviso: ver la cabecera del archivo y LICENSE. */
 /* =====================================================================
    CREADOR WEB — estilos
    Mismos "tokens" de diseño que la app de control y la memoria, para que
@@ -537,6 +591,8 @@ body.resizing iframe { pointer-events: none; }
 .welcome-hero .wm svg { width: 30px; height: 30px; stroke-width: 2.4; }
 .welcome-hero h2 { margin: 8px 0 0; font-size: 20px; }
 .welcome-hero p { margin: 0; color: var(--muted); max-width: 40ch; }
+.credit { margin: 8px 0 0; text-align: center; font-size: 11px; color: var(--muted); }
+.credit a { color: inherit; }
 .welcome-opts { border-radius: 14px; background: var(--faint); border: 1px solid var(--line); padding: 2px 14px; margin: 8px 0 4px; }
 .continue-card { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; border: 1px solid rgb(var(--a) / .4); background: rgb(var(--a) / .08); margin-bottom: 10px; cursor: pointer; text-align: left; width: 100%; }
 .continue-card .ci { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; background: rgb(var(--a)); color: var(--on-a); flex: none; }
@@ -1033,7 +1089,7 @@ body.bk-dragging, body.bk-dragging * { cursor: grabbing !important; }
     <span class="sb-item" id="sbStore" title="Tus proyectos se guardan en este navegador"><svg class="ic"><use href="#i-database"/></svg><span>Guardado en este navegador</span></span>
     <div class="sb-right">
       <button class="sb-item" id="sbAi" title="Estado del asistente"><i class="ai-dot" id="aiDot"></i><span id="sbAiText">Asistente local</span></button>
-      <span class="sb-item"><svg class="ic"><use href="#i-code"/></svg>Creador Web</span>
+      <span class="sb-item" title="© 2026 Adrián Bellamy Encinas · PolyForm Noncommercial 1.0.0"><svg class="ic"><use href="#i-code"/></svg>Creador Web</span>
     </div>
   </footer>
 
@@ -1061,6 +1117,7 @@ body.bk-dragging, body.bk-dragging * { cursor: grabbing !important; }
 
 <script>
 'use strict';
+/* © 2026 Adrián Bellamy Encinas (losbellamy4@gmail.com) · Licencia PolyForm Noncommercial 1.0.0 · Uso comercial solo con acuerdo escrito del titular. No eliminar este aviso: ver la cabecera del archivo y LICENSE. */
 /* =====================================================================
    CREADOR WEB — utilidades comunes
    Funciones pequeñas que usa todo el programa.
@@ -8841,7 +8898,10 @@ Object.assign(UI, {
         html = `<div class="set-sec"><h3>Creador Web</h3>
           <p style="color:var(--muted)">Un editor para crear páginas web con HTML, CSS y JavaScript que funciona entero en el navegador: carpetas ordenadas, vista previa, corrector que explica los errores y coloca cada cosa en su sitio, memoria automática y asistente.</p>
           <p style="color:var(--muted)">Tus proyectos se guardan solo en este navegador. Nada sale de aquí salvo que uses el asistente con IA (que envía el proyecto a la API de Claude de Anthropic con tu clave) o abras enlaces externos.</p>
-          <p style="color:var(--muted)">Hecho con HTML, CSS y JavaScript, sin librerías. La vista de bloques está inspirada en Scratch. Funciona sin internet una vez abierto (salvo las fuentes y el asistente con IA).</p></div>`;
+          <p style="color:var(--muted)">Hecho con HTML, CSS y JavaScript, sin librerías. La vista de bloques está inspirada en Scratch. Funciona sin internet una vez abierto (salvo las fuentes y el asistente con IA).</p></div>
+        <div class="set-sec"><h3>Autoría y licencia</h3>
+          <p>© 2026 Adrián Bellamy Encinas · <a href="mailto:losbellamy4@gmail.com">losbellamy4@gmail.com</a></p>
+          <p style="color:var(--muted)">Licencia <a href="https://polyformproject.org/licenses/noncommercial/1.0.0" target="_blank" rel="noopener noreferrer">PolyForm Noncommercial 1.0.0</a>: puedes usarlo, estudiarlo, modificarlo y compartirlo sin fines comerciales, siempre que conserves el aviso de autoría. Las versiones modificadas por otras personas no son obra del autor ni las respalda. Cualquier uso comercial necesita un acuerdo por escrito con el autor.</p></div>`;
       }
       body.innerHTML = html;
       // enlazar controles
@@ -9067,7 +9127,8 @@ const Welcome = {
           <div class="set-row"><div><b>Tema</b><small>Puedes cambiarlo cuando quieras en Ajustes</small></div><div class="seg" id="wTheme"><button type="button" data-v="dark">${icon('moon')}Oscuro</button><button type="button" data-v="light">${icon('sun')}Claro</button></div></div>
           <div class="set-row"><div><b>Color</b></div><div class="swatches" id="wAccent">${['green', 'cyan', 'violet', 'orange', 'pink'].map(sw).join('')}</div></div>
         </div>
-        <p style="text-align:center;margin:10px 0 0;font-size:12px">Todo se guarda solo en este navegador. ¿Quieres una guía rápida?</p>`,
+        <p style="text-align:center;margin:10px 0 0;font-size:12px">Todo se guarda solo en este navegador. ¿Quieres una guía rápida?</p>
+        <p class="credit">© 2026 Adrián Bellamy Encinas · Uso no comercial (<a href="https://polyformproject.org/licenses/noncommercial/1.0.0" target="_blank" rel="noopener noreferrer">PolyForm Noncommercial 1.0.0</a>)</p>`,
       foot: [{ label: 'Plantillas', icon: 'layout', fn: () => { setTimeout(() => UI.templatesDialog(), 320); } }, { label: 'No, gracias' }, { label: 'Sí, enséñame', icon: 'compass', primary: true, fn: () => { setTimeout(() => Tour.start(), 360); } }],
       onClose: () => Prefs.set('seenWelcome', true),
     });

@@ -156,3 +156,19 @@ Un editor para crear páginas web con HTML, CSS y JavaScript que funciona entero
 - **Guardado local** (IndexedDB) con historial de versiones, plantillas (incluida una del control remoto), descarga en `.zip`, en un solo `.html` o solo la memoria.
 - **Si no se abre**: ya no se queda en blanco si internet va lento o bloquea las fuentes de Google (pasa en algunas redes de instituto). Si el navegador es muy antiguo, sale un aviso explicando qué hacer. Ábrelo con Chrome, Edge, Firefox o Safari actualizados, no con el visor de archivos del móvil.
 - **Archivos grandes**: se puede pegar código largo (miles de líneas) sin que se quede pillado: en archivos grandes solo se colorea el trozo que se ve y el corrector no vuelve a revisar los archivos que no han cambiado.
+
+---
+
+## 8. Autoría y licencia
+
+© 2026 **Adrián Bellamy Encinas** · contacto: [losbellamy4@gmail.com](mailto:losbellamy4@gmail.com)
+
+Este proyecto es **código fuente disponible** con la licencia [PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0) (texto completo en [`LICENSE`](LICENSE)). En resumen, y sin sustituir a la licencia:
+
+- **Se puede** usar, copiar, estudiar, modificar y compartir **sin fines comerciales** (uso personal, estudio, centros educativos, organizaciones benéficas, administraciones públicas…).
+- **Hay que** conservar siempre el aviso de autoría (las líneas `Required Notice` del principio de `index.html`, `creador-web.html` y `LICENSE`) y la licencia en cualquier copia o versión, con o sin cambios. Quitarlo es incumplir la licencia.
+- **Uso comercial** (venderlo, cobrar por usarlo, meterlo en un producto o servicio de pago o con publicidad, o sacar de él cualquier beneficio económico): solo con un acuerdo económico previo y por escrito con el autor.
+- **Sin garantía**: se entrega «tal cual». El autor no responde de los daños que cause su uso ni de los cambios o versiones que hagan otras personas; cada cual responde de sus modificaciones.
+- Si alguien la incumple, pierde el permiso salvo que lo corrija en los 32 días siguientes al primer aviso por escrito del autor.
+
+Si hay diferencias entre este resumen y la licencia, vale lo que dice la licencia (en inglés).

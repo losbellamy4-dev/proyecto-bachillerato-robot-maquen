@@ -2,6 +2,59 @@
 <html lang="es" data-theme="dark" data-accent="green">
 <head>
 <meta charset="utf-8">
+<!--
+================================================================================
+  AVISO DE AUTORÍA Y LICENCIA · NO ELIMINAR NI MODIFICAR ESTE BLOQUE
+================================================================================
+Required Notice: Copyright (c) 2026 Adrián Bellamy Encinas (losbellamy4@gmail.com)
+Required Notice: Obra original de Adrián Bellamy Encinas. Las versiones modificadas por terceros no son obra suya ni cuentan con su respaldo, y él no responde de ellas.
+Required Notice: Cualquier uso comercial requiere una licencia o un acuerdo escrito previo con el titular (losbellamy4@gmail.com).
+
+  Obra ....... Seguridad Vial con micro:bit · app de control del coche (index.html)
+  Titular .... Adrián Bellamy Encinas
+  Contacto ... losbellamy4@gmail.com
+  Licencia ... PolyForm Noncommercial License 1.0.0
+               https://polyformproject.org/licenses/noncommercial/1.0.0
+               (texto completo en el archivo LICENSE que acompaña a este código)
+
+  RESUMEN ORIENTATIVO. No sustituye a la licencia: en caso de duda o de
+  diferencia prevalece el texto oficial de la PolyForm Noncommercial 1.0.0.
+
+  1. Uso sin fines comerciales. Se permite usar, copiar, estudiar, modificar
+     y compartir este código, entero o en parte, solo para fines no
+     comerciales: uso personal, estudio, investigación, aficiones, centros
+     educativos, organizaciones benéficas y administraciones públicas.
+
+  2. Reconocimiento obligatorio. Toda copia, adaptación o versión derivada,
+     total o parcial y con o sin cambios, debe conservar completo y sin
+     alterar este aviso (en especial las líneas «Required Notice») y el texto
+     o el enlace de la licencia. Eliminarlo, ocultarlo o modificarlo es un
+     incumplimiento de la licencia.
+
+  3. Uso comercial. Cualquier uso con ánimo de lucro o del que se obtenga un
+     beneficio económico, directo o indirecto (venderlo, cobrar por usarlo o
+     por acceder a él, incluirlo en un producto, servicio o encargo de pago,
+     o en una web o app con publicidad, entre otros), no está permitido sin
+     un acuerdo económico previo y por escrito con el titular.
+
+  4. Sin garantía ni responsabilidad. El código se entrega «tal cual», sin
+     garantías de ningún tipo. En la medida en que lo permita la ley, el
+     titular no responde de los daños que pueda causar su uso ni de los
+     cambios, versiones o usos que hagan terceros; cada persona responde de
+     sus propias modificaciones y del uso que haga de ellas.
+
+  5. Incumplimiento. Quien incumpla la licencia pierde el permiso de uso,
+     salvo que lo corrija dentro de los 32 días siguientes al primer aviso
+     por escrito del titular.
+
+  6. Derechos reservados. Todo lo que no se concede de forma expresa queda
+     reservado al titular, que puede ofrecer este código con otras
+     condiciones (por ejemplo, una licencia comercial).
+================================================================================
+-->
+<meta name="author" content="Adrián Bellamy Encinas">
+<meta name="copyright" content="© 2026 Adrián Bellamy Encinas · PolyForm Noncommercial 1.0.0 · Uso comercial solo con acuerdo escrito del titular">
+<link rel="license" href="https://polyformproject.org/licenses/noncommercial/1.0.0">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Seguridad Vial · micro:bit</title>
 <meta name="description" content="Controla el coche Maqueen con micro:bit por Bluetooth desde el móvil.">
@@ -29,6 +82,7 @@
 </script>
 
 <style>
+/* © 2026 Adrián Bellamy Encinas (losbellamy4@gmail.com) · Licencia PolyForm Noncommercial 1.0.0 · Uso comercial solo con acuerdo escrito del titular. No eliminar este aviso: ver la cabecera del archivo y LICENSE. */
 /* =====================================================================
    1. TOKENS DE DISEÑO
    Todos los colores, curvas y radios salen de aquí: así el tema claro/oscuro
@@ -628,6 +682,8 @@ body.app-in .reveal { opacity: 1; transform: none; }
 .switch[aria-checked="true"] { background: rgb(var(--a)); }
 .switch[aria-checked="true"] i { transform: translateX(20px); }
 .sheet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sheet > .sheet-credit { margin: 14px auto 0; max-width: none; font-size: 11px; line-height: 1.4; }
+.sheet-credit a { color: inherit; }
 .btn { height: 48px; border-radius: 15px; border: 1px solid transparent; font-size: 15px; font-weight: 650; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform .2s var(--ease), background-color .3s; }
 .btn:active { transform: scale(.97); }
 .btn.primary { color: var(--on-a); background: linear-gradient(180deg, rgb(var(--a)), rgb(var(--a) / .82)); box-shadow: 0 10px 24px -10px rgb(var(--a) / calc(.9 * var(--glow-k))), inset 0 1px 0 rgba(255,255,255,.35); }
@@ -931,6 +987,7 @@ body.app-in .reveal { opacity: 1; transform: none; }
       </div>
     </div>
     <div class="sheet-actions" id="sheetActions"></div>
+    <p class="sheet-credit">© 2026 Adrián Bellamy Encinas · Uso no comercial (<a href="https://polyformproject.org/licenses/noncommercial/1.0.0" target="_blank" rel="noopener noreferrer">PolyForm Noncommercial 1.0.0</a>)</p>
   </div>
 </div>
 
@@ -955,6 +1012,7 @@ body.app-in .reveal { opacity: 1; transform: none; }
 
 <script>
 'use strict';
+/* © 2026 Adrián Bellamy Encinas (losbellamy4@gmail.com) · Licencia PolyForm Noncommercial 1.0.0 · Uso comercial solo con acuerdo escrito del titular. No eliminar este aviso: ver la cabecera del archivo y LICENSE. */
 /* =======================================================================
    SEGURIDAD VIAL CON MICRO:BIT — App controladora (Web Bluetooth)
    Estructura:
