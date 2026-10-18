@@ -1307,6 +1307,7 @@ const Project = {
   touch() {
     if (!this.cur) return;
     this.cur.updated = Date.now();
+    this.rev = (this.rev || 0) + 1; // cuenta cada cambio (dos cambios pueden caer en el mismo milisegundo)
     this.editsSinceSnap++;
     Bus.emit('save-state', 'saving');
     this._saveSoon();
@@ -1724,11 +1725,25 @@ const HL = (() => {
         const rest = code.slice(i);
         const em = re.exec(rest);
         const inner = em ? rest.slice(0, em.index) : rest;
-        out.push(tagName === 'script' ? js(inner) : css(inner));
+        out.push(block(tagName, inner));
         i += inner.length;
       }
     }
     return out.join('');
+  }
+  // Los bloques <script> y <style> se guardan ya coloreados: al escribir fuera de ellos
+  // (o en otro bloque) no hay que volver a colorearlos enteros.
+  const blocks = new Map();
+  function block(tag, inner) {
+    if (inner.length < 2000) return tag === 'script' ? js(inner) : css(inner);
+    const key = tag + '\n' + inner;
+    let r = blocks.get(key);
+    if (r == null) {
+      r = tag === 'script' ? js(inner) : css(inner);
+      blocks.set(key, r);
+      if (blocks.size > 12) blocks.delete(blocks.keys().next().value);
+    }
+    return r;
   }
   function text(s) {
     return E(s).replace(/&amp;(#?\w+;)/g, '<span class="t-n">&amp;$1</span>');
@@ -2014,6 +2029,7 @@ const SHORT = {
 const edLang = p => { const l = langOf(p); return (Path.ext(p) === 'svg' || Path.ext(p) === 'xml') ? 'html' : l; };
 const PAIRS = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`' };
 const CLOSERS = new Set([')', ']', '}', '"', "'", '`']);
+const BIG_DOC = 15000; // caracteres: a partir de aquí solo se colorea el trozo que se ve
 
 /** En un HTML, ¿la posición está dentro de <script>, <style> o en HTML normal? */
 function langAt(text, idx, base) {
@@ -2118,6 +2134,7 @@ const Editor = {
     E.img.hidden = true; E.empty.hidden = true; E.ro.hidden = true;
     this.cur = null; this.path = path || null;
     this.lineMarks = new Map(); this.ranges = []; this.bracket = null;
+    this._win = null; E.gutter.style.minWidth = '';
     if (!path || !Project.has(path)) {
       this.path = null;
       E.hl.textContent = ''; E.marks.textContent = ''; E.gutter.textContent = ''; this._gutterKey = '';
@@ -2177,53 +2194,147 @@ const Editor = {
   },
   refreshReadonly() { const d = this.cur; if (d && d.ro) { const st = d.ta.scrollTop; d.ta.value = Project.read(d.path) ?? ''; d.ta.scrollTop = st; this.renderNow(); } },
 
-  /* ---------- pintar ---------- */
+  /* ---------- pintar ----------
+     Archivos pequeños: se colorea todo de una vez.
+     Archivos grandes: solo se colorean las líneas que se ven (y un margen por arriba y por
+     abajo). Al hacer scroll se vuelve a pintar ese trozo. Pintar miles de líneas de golpe
+     era lo que dejaba la página pillada al pegar mucho código. */
   scheduleRender() { if (!this._raf) this._raf = requestAnimationFrame(() => { this._raf = 0; this.renderNow(); }); },
   renderNow() {
     const d = this.cur; if (!d) return;
     const v = d.ta.value;
-    this.els.hl.innerHTML = HL.highlight(v, d.lang) + (v.endsWith('\n') || !v ? ' ' : '');
+    const top0 = this.winTop();
+    d.big = v.length > BIG_DOC;
+    if (d.big) { if (this.needWindow()) this.paintWindow(); }
+    else {
+      this._win = null; d.hc = null;
+      this.els.hl.innerHTML = HL.highlight(v, d.lang) + (v.endsWith('\n') || !v ? ' ' : '');
+    }
     this.renderGutter(v);
     this.renderMarks();
+    if (this.winTop() !== top0) this.applyScroll();
+  },
+  winTop() { const w = this._win; return w && !w.wrap ? w.top : 0; },
+  /** Colores del archivo partidos por líneas. Se guardan hasta que cambia el texto. */
+  lineCache(d) {
+    const v = d.ta.value;
+    if (d.hc && d.hc.src === v) return d.hc;
+    const raw = v.split('\n');
+    const starts = new Array(raw.length + 1);
+    starts[0] = 0;
+    for (let i = 0; i < raw.length; i++) starts[i + 1] = starts[i] + raw[i].length + 1;
+    // el HTML coloreado se corta en cada salto de línea; los <span> abiertos se cierran y se vuelven a abrir
+    const html = HL.highlight(v, d.lang);
+    const col = [], open = [];
+    const re = /<span class="[^"]*">|<\/span>|\n/g;
+    let m, from = 0, reopen = '';
+    while ((m = re.exec(html))) {
+      if (m[0] === '\n') { col.push(reopen + html.slice(from, m.index) + '</span>'.repeat(open.length)); reopen = open.join(''); from = m.index + 1; }
+      else if (m[0] === '</span>') open.pop();
+      else open.push(m[0]);
+    }
+    col.push(reopen + html.slice(from) + '</span>'.repeat(open.length));
+    return (d.hc = { src: v, raw, starts, col: col.length === raw.length ? col : null });
+  },
+  /** Línea (empezando en 0) que hay a una altura del texto, en píxeles. */
+  lineAtY(y) {
+    const d = this.cur, n = d.hc ? d.hc.raw.length : countLines(d.ta.value);
+    let line;
+    if (!Prefs.get('wrap')) line = (y - this.m.padTop) / this.m.lineH;
+    else {
+      // con ajuste de línea cada línea mide distinto: se calcula a partir de lo ya pintado
+      const w = this._win, H = Math.max(1, d.ta.scrollHeight);
+      if (w && w.wrap) this.wrapY(w);
+      if (!w || !w.wrap) line = n * y / H;
+      else if (y < w.aY) line = w.a * y / Math.max(1, w.aY);
+      else if (y < w.bY) line = w.a + (w.b - w.a) * (y - w.aY) / Math.max(1, w.bY - w.aY);
+      else line = w.b + (n - w.b) * (y - w.bY) / Math.max(1, H - w.bY);
+    }
+    return Math.max(0, Math.min(n - 1, Math.floor(line)));
+  },
+  /** ¿Lo que se ve está a punto de salirse del trozo coloreado? */
+  needWindow() {
+    const d = this.cur, w = this._win;
+    if (!w || w.src !== d.ta.value || w.wrap !== !!Prefs.get('wrap')) return true;
+    const ta = d.ta, y = ta.scrollTop, h = ta.clientHeight, n = d.hc.raw.length;
+    if (w.wrap) { this.wrapY(w); return (w.a > 0 && y < w.aY + h / 2) || (w.b < n && y + h > w.bY - h / 2); }
+    const first = this.lineAtY(y), last = first + w.vis;
+    return (w.a > 0 && first < w.a + w.pad / 2) || (w.b < n && last > w.b - w.pad / 2);
+  },
+  /** Con ajuste de línea: altura (en píxeles) a la que empieza y acaba el trozo coloreado. */
+  wrapY(w) { w.aY = w.sa.offsetTop; w.bY = w.sb.offsetTop + w.sb.offsetHeight; },
+  paintWindow(verify = false) {
+    const d = this.cur, ta = d.ta, E = HL.escape;
+    const c = this.lineCache(d), n = c.raw.length;
+    const wrap = !!Prefs.get('wrap');
+    const vis = Math.ceil(ta.clientHeight / this.m.lineH) + 1;
+    const pad = Math.max(40, vis);
+    for (let tries = 0; tries < 4; tries++) {
+      const first = this.lineAtY(ta.scrollTop + (wrap ? ta.clientHeight / 2 : 0)) - (wrap ? vis >> 1 : 0);
+      const a = Math.max(0, first - pad), b = Math.min(n, first + vis + pad);
+      let body = '';
+      for (let i = a; i < b; i++) body += (c.col && c.raw[i].length <= 3000 ? c.col[i] : E(c.raw[i])) + (i < n - 1 ? '\n' : '');
+      const end = b >= n && c.src.endsWith('\n') ? ' ' : '';
+      const w = { src: c.src, a, b, vis, pad, wrap, cs: c.starts[a], ce: Math.min(c.src.length, c.starts[b]), top: a * this.m.lineH };
+      if (!wrap) { this.els.hl.innerHTML = body + end; this._win = w; return; }
+      // con ajuste de línea el texto de antes y de después se pone sin colores, para que todo ocupe lo mismo
+      this.els.hl.innerHTML = E(c.src.slice(0, w.cs)) + '<span class="wa"></span>' + body + '<span class="wb"></span>' + E(c.src.slice(w.ce)) + (c.src.endsWith('\n') ? ' ' : '');
+      w.sa = this.els.hl.querySelector('.wa'); w.sb = this.els.hl.querySelector('.wb'); w.top = 0;
+      this._win = w;
+      // al hacer scroll se comprueba que lo que se ve ha quedado dentro (si no, se recoloca);
+      // al escribir no, para no obligar al navegador a recolocar todo dos veces
+      if (!verify) return;
+      this.wrapY(w);
+      const y = ta.scrollTop, h = ta.clientHeight;
+      if (!((a > 0 && y < w.aY) || (b < n && y + h > w.bY))) return;
+    }
   },
   renderGutter(v) {
     if (Prefs.get('wrap')) return;
-    const n = Math.max(1, countLines(v));
-    const key = n + '|' + [...this.lineMarks].join(',');
+    const n = Math.max(1, this.cur && this.cur.hc && this.cur.hc.src === v ? this.cur.hc.raw.length : countLines(v));
+    const w = this._win;
+    const a = w ? w.a : 0, b = w ? w.b : n;
+    const key = n + '|' + a + '|' + b + '|' + [...this.lineMarks].join(',');
     if (key !== this._gutterKey) {
-      const parts = new Array(n);
-      for (let i = 1; i <= n; i++) { const mk = this.lineMarks.get(i); parts[i - 1] = mk ? `<span class="${mk}">${i}</span>` : `<span>${i}</span>`; }
+      const parts = new Array(b - a);
+      for (let i = a + 1; i <= b; i++) { const mk = this.lineMarks.get(i); parts[i - 1 - a] = mk ? `<span class="${mk}">${i}</span>` : `<span>${i}</span>`; }
       this.els.gutter.innerHTML = parts.join('');
-      this._gutterKey = key; this._onLine = 0;
+      // en archivos grandes solo hay unos pocos números: se reserva el ancho del más largo
+      this.els.gutter.style.minWidth = w ? `calc(${String(n).length}ch + 24px)` : '';
+      this._gutterKey = key; this._onLine = 0; this._gutterBase = a;
     }
     this.markGutterLine();
   },
   markGutterLine() {
     const line = this.caretLine || 1;
     if (this._onLine === line) return;
-    const kids = this.els.gutter.children;
-    if (this._onLine && kids[this._onLine - 1]) kids[this._onLine - 1].classList.remove('on');
-    if (kids[line - 1]) kids[line - 1].classList.add('on');
+    const kids = this.els.gutter.children, base = this._gutterBase || 0;
+    if (this._onLine && kids[this._onLine - 1 - base]) kids[this._onLine - 1 - base].classList.remove('on');
+    if (kids[line - 1 - base]) kids[line - 1 - base].classList.add('on');
     this._onLine = line;
   },
   /** Capa transparente con resaltados: búsquedas, pareja de paréntesis y subrayados de errores. */
   renderMarks() {
     const d = this.cur; if (!d) return;
     const v = d.ta.value;
+    // en archivos grandes solo se marca el trozo que se está viendo
+    const w = this._win && this._win.src === v ? this._win : null;
+    const cs = w ? w.cs : 0, ce = w ? w.ce : v.length;
     const R = [];
-    if (Find.active && Find.matches.length) Find.matches.forEach((m, i) => R.push({ s: m[0], e: m[1], o: `<mark${i === Find.idx ? ' class="cur"' : ''}>`, c: '</mark>', p: 3 }));
-    for (const r of this.ranges) if (r.e > r.s && r.e <= v.length) R.push({ s: r.s, e: r.e, o: `<u class="${r.cls}">`, c: '</u>', p: 2 });
-    if (this.bracket) for (const i of this.bracket) R.push({ s: i, e: i + 1, o: '<span class="br">', c: '</span>', p: 1 });
+    if (Find.active && Find.matches.length) Find.matches.forEach((m, i) => { if (m[1] > cs && m[0] < ce) R.push({ s: m[0], e: m[1], o: `<mark${i === Find.idx ? ' class="cur"' : ''}>`, c: '</mark>', p: 3 }); });
+    for (const r of this.ranges) if (r.e > r.s && r.e <= v.length && r.e > cs && r.s < ce) R.push({ s: r.s, e: r.e, o: `<u class="${r.cls}">`, c: '</u>', p: 2 });
+    if (this.bracket) for (const i of this.bracket) if (i >= cs && i < ce) R.push({ s: i, e: i + 1, o: '<span class="br">', c: '</span>', p: 1 });
     if (!R.length) { if (this.els.marks.firstChild) this.els.marks.textContent = ''; return; }
     R.sort((a, b) => a.s - b.s || b.p - a.p);
     const E = HL.escape;
-    let out = '', pos = 0;
+    let out = w && w.wrap ? E(v.slice(0, cs)) : '', pos = cs;
     for (const r of R) {
       if (r.s < pos) continue;
-      out += E(v.slice(pos, r.s)) + r.o + E(v.slice(r.s, r.e)) + r.c;
-      pos = r.e;
+      const e = Math.min(r.e, ce);
+      out += E(v.slice(pos, r.s)) + r.o + E(v.slice(r.s, e)) + r.c;
+      pos = e;
     }
-    out += E(v.slice(pos)) + ' ';
+    out += E(v.slice(pos, w && !w.wrap ? ce : v.length)) + ' ';
     this.els.marks.innerHTML = out;
   },
   /** Marca líneas con errores (en el margen) y subraya los trozos con problemas. */
@@ -2241,10 +2352,17 @@ const Editor = {
   /* ---------- scroll, cursor ---------- */
   onScroll() {
     const d = this.cur; if (!d) return;
+    if (d.big && this.needWindow()) { this.paintWindow(true); this.renderGutter(d.ta.value); this.renderMarks(); }
+    this.applyScroll();
+  },
+  applyScroll() {
+    const d = this.cur; if (!d) return;
     const x = d.ta.scrollLeft, y = d.ta.scrollTop;
-    const t = `translate(${-x}px,${-y}px)`;
+    // en archivos grandes las capas solo tienen el trozo que se ve: se bajan hasta su sitio
+    const top = this.winTop();
+    const t = `translate(${-x}px,${top - y}px)`;
     this.els.hl.style.transform = t; this.els.marks.style.transform = t;
-    this.els.gutter.style.transform = `translateY(${-y}px)`;
+    this.els.gutter.style.transform = `translateY(${top - y}px)`;
     this.placeCurLine();
     if (AC.open) AC.place();
   },
@@ -2343,10 +2461,16 @@ const Editor = {
     this._inEdit = true; this._acAfter = null;
     const before = ta.value;
     const expected = before.slice(0, start) + text + before.slice(end);
-    try { if (text) document.execCommand('insertText', false, text); else if (start !== end) document.execCommand('delete'); } catch (e) {}
+    // Meter muchas líneas con execCommand tarda segundos en un archivo grande (crece con
+    // líneas metidas × líneas del archivo). En ese caso se cambia de golpe: ese paso no se
+    // deshace con Ctrl+Z, así que antes se guarda una copia en el Historial.
+    this.lastEditBig = text.length > 2000 && countLines(text) * countLines(expected) > 60000;
+    if (this.lastEditBig) Project.snapshot(`Antes de un cambio grande en ${d.path}`, true);
+    else try { if (text) document.execCommand('insertText', false, text); else if (start !== end) document.execCommand('delete'); } catch (e) {}
     if (ta.value !== expected) {
-      // Plan B (algunos navegadores no dejan usar execCommand): se pierde el deshacer de este paso
-      ta.value = expected; ta.setSelectionRange(start + text.length, start + text.length); this.onInput(d);
+      // Plan B (cambio enorme, o el navegador no deja usar execCommand): se pierde el deshacer de este paso
+      const st = ta.scrollTop;
+      ta.value = expected; ta.setSelectionRange(start + text.length, start + text.length); ta.scrollTop = st; this.onInput(d);
     }
     if (selS != null) ta.setSelectionRange(selS, selE ?? selS);
     this._inEdit = false;
@@ -2569,7 +2693,8 @@ const Editor = {
     const line = this.caretLine || 1;
     this.edit(0, v.length, out);
     this.goto(Math.min(line, countLines(out)));
-    UI.toast({ title: 'Sangrías ordenadas', msg: 'Ctrl+Z para deshacer', tone: 'ok', ms: 2200 });
+    if (this.lastEditBig) UI.toast({ title: 'Sangrías ordenadas', msg: 'Archivo grande: para volver atrás usa el Historial.', tone: 'ok', ms: 3500, action: { label: 'Historial', fn: () => UI.historyDialog() } });
+    else UI.toast({ title: 'Sangrías ordenadas', msg: 'Ctrl+Z para deshacer', tone: 'ok', ms: 2200 });
   },
   currentLineText() {
     const d = this.cur; if (!d) return '';
@@ -2670,7 +2795,8 @@ const Find = {
     const n = this.matches.length;
     Editor.edit(0, v.length, out, null, null, true);
     this.update(false);
-    UI.toast({ title: `${n} reemplazo${n === 1 ? '' : 's'}`, tone: 'ok', ms: 1800 });
+    if (Editor.lastEditBig) UI.toast({ title: `${n} reemplazo${n === 1 ? '' : 's'}`, msg: 'Archivo grande: para volver atrás usa el Historial.', tone: 'ok', ms: 3500, action: { label: 'Historial', fn: () => UI.historyDialog() } });
+    else UI.toast({ title: `${n} reemplazo${n === 1 ? '' : 's'}`, tone: 'ok', ms: 1800 });
   },
 };
 
@@ -3231,7 +3357,9 @@ const HEAD_OK = new Set(['meta', 'link', 'title', 'base', 'style', 'script', 'no
 
 /* ---------- Clasificador: ¿este trozo es HTML, CSS o JavaScript? ---------- */
 const JS_START = /^\s*(?:const|let|var|function|if|for|while|do|switch|return|class|import|export|async|await|try|throw|new|document|window|console|navigator|localStorage|setTimeout|setInterval|alert)\b|^\s*[\w$]+(?:\.[\w$]+)*\s*(?:\(|=(?!=)|\+\+|--|\+=|-=)|^\s*\/\/|^\s*\}\s*(?:else|catch|finally)\b/;
-const CSS_SEL = /^\s*(?:@(?:media|keyframes|font-face|import|supports|layer|container)\b|:root\b|(?:[.#]?-?[a-zA-Z*_][\w-]*|\*|\[[^\]]+\])(?:(?::{1,2}[\w-]+(?:\([^)]*\))?)|(?:\[[^\]]+\])|(?:[.#][\w-]+))*(?:\s*[,>+~]?\s*(?:[.#]?[a-zA-Z*_][\w-]*|\*)(?:(?::{1,2}[\w-]+(?:\([^)]*\))?)|(?:[.#][\w-]+))*)*\s*\{)/;
+// Selector de CSS seguido de "{". Cada carácter solo se puede leer de una forma (sin repeticiones
+// anidadas), así tarda lo mismo con cualquier línea. La versión anterior podía tardar minutos.
+const CSS_SEL = /^\s*(?:@(?:media|keyframes|font-face|import|supports|layer|container)\b|:root\b|(?:[.#:*a-zA-Z_&]|\[[^\]]*\])(?:[^{};=():"'`\[\]]|:{1,2}(?=([\w-]+))\1(?:\([^(){};]*\))?|\[[^\]]*\])*\{)/;
 const CSS_DECL = /^\s*(-{0,2}[a-zA-Z][\w-]*)\s*:\s*[^;{}]+;?\s*$/;
 const HTML_START = /^\s*<(?:!--|!doctype|\/?[a-zA-Z][\w:-]*(?:\s|>|\/>|$))/i;
 const JS_KW_LINE = /^\s*(?:else|try|finally|do|switch|class|function|if|for|while|catch|return|const|let|var|async|new)\b/;
@@ -3239,7 +3367,7 @@ const JS_KW_LINE = /^\s*(?:else|try|finally|do|switch|class|function|if|for|whil
 const Detect = {
   lineLang(line, ctx) {
     const t = line.trim();
-    if (!t) return null;
+    if (!t || t.length > 500) return null; // las líneas larguísimas (código minificado) siguen al trozo anterior
     if (HTML_START.test(t)) return 'html';
     if (/^\/\*/.test(t) || /^\*/.test(t)) return ctx === 'js' ? 'js' : 'css';
     if (CSS_SEL.test(t) && !JS_KW_LINE.test(t) && !/[=()]/.test(t.replace(/\([^)]*\)/g, '').replace(/\[[^\]]*\]/g, ''))) return 'css';
@@ -3288,7 +3416,7 @@ const Symbols = {
   _key: '', _val: null,
   get() {
     const P = Project.cur;
-    const key = P ? P.id + ':' + P.updated : '';
+    const key = P ? P.id + ':' + P.updated + ':' + Project.rev : '';
     if (key === this._key && this._val) return this._val;
     const S = { ids: new Set(), htmlClasses: new Set(), tags: new Set(), cssClasses: new Set(), cssIds: new Set(), cssVars: new Set(), jsIds: new Set(), jsFunctions: new Set(), jsVars: new Set(), jsDeclared: new Set(), storageKeys: new Set(), jsText: '', idsByFile: new Map() };
     if (!P) return S;
@@ -3598,7 +3726,19 @@ const Placer = {
    ===================================================================== */
 const Analyzer = {
   problems: [], runtime: [], version: 0, running: false,
-  schedule: debounce(() => Analyzer.run(), 450),
+  // Espera a que dejes de escribir. Si la última revisión tardó (proyecto grande), espera más
+  // para no cortarte mientras escribes.
+  _timer: 0, lastMs: 0,
+  schedule() { clearTimeout(this._timer); this._timer = setTimeout(() => this.run(), this.lastMs > 60 ? 1200 : 450); },
+  // Lo encontrado en cada archivo se guarda: si ese archivo no ha cambiado (ni lo que
+  // usa de los demás), no se vuelve a revisar.
+  _cache: new Map(),
+  /** Lo que un archivo usa de los demás: ids, clases, funciones, rutas… */
+  context() {
+    const S = Symbols.get(), P = Project.cur;
+    return [P.id, P.name, P.entry, Project.paths().join('|'), hashStr(S.jsText),
+      ...[S.ids, S.htmlClasses, S.cssClasses, S.cssIds, S.cssVars, S.jsFunctions].map(x => [...x].join(','))].join('\n');
+  },
   indentBefore(text, idx) { const ls = text.lastIndexOf('\n', idx - 1) + 1; return (text.slice(ls, idx).match(/^[ \t]*/) || [''])[0]; },
   isJSType(t) { const ty = attrOf(t, 'type'); return !ty || !ty.value || /^(text\/javascript|module|application\/javascript)$/i.test(ty.value.trim()); },
   /** Nombre de la etiqueta que hay que cerrar en esta posición (para "</"). */
@@ -3632,18 +3772,29 @@ const Analyzer = {
     this.running = true;
     const list = [];
     const add = p => { list.push(p); };
-    this._sink = add; // las comprobaciones de CSS y JS añaden aquí (parte síncrona)
+    const t0 = performance.now();
     const syntaxJobs = [];
+    const ctx = this.context();
     for (const path of Project.textPaths()) {
       const text = P.files[path].content || '';
       const lang = langOf(path);
+      const c = this._cache.get(path);
+      if (c && c.text === text && c.ctx === ctx) { list.push(...c.list); syntaxJobs.push(...c.jobs); continue; }
+      const mine = [], jobs = [];
+      const addMine = p => { mine.push(p); };
+      this._sink = addMine; // las comprobaciones de CSS y JS añaden aquí (parte síncrona)
       try {
-        if (lang === 'html') this.checkHTML(path, text, add, syntaxJobs);
-        else if (lang === 'css') this.checkCSSFile(path, text, add);
-        else if (lang === 'js') { this.checkJSFile(path, text, add); syntaxJobs.push({ path, text, offset: 0 }); }
-      } catch (e) { console.warn('corrector', path, e); }
+        if (lang === 'html') this.checkHTML(path, text, addMine, jobs);
+        else if (lang === 'css') this.checkCSSFile(path, text, addMine);
+        else if (lang === 'js') { this.checkJSFile(path, text, addMine); jobs.push({ path, text, offset: 0 }); }
+        this._cache.set(path, { text, ctx, list: mine, jobs });
+      } catch (e) { console.warn('corrector', path, e); this._cache.delete(path); }
+      list.push(...mine); syntaxJobs.push(...jobs);
     }
+    for (const path of this._cache.keys()) if (!Project.has(path)) this._cache.delete(path);
+    this._sink = add;
     try { this.checkProject(add); } catch (e) { console.warn('corrector', e); }
+    this.lastMs = performance.now() - t0;
     // sintaxis JS (en el iframe aislado)
     for (const job of syntaxJobs) {
       const err = await Syntax.check(job.text);

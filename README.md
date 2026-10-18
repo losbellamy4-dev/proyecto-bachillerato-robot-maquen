@@ -153,3 +153,4 @@ Un editor para crear páginas web con HTML, CSS y JavaScript que funciona entero
 - **Vista previa en directo** con consola, tamaños de móvil y tablet, y «abrir en pestaña nueva» (necesario para Web Bluetooth).
 - **Asistente**: sin clave funciona en local (corrector, glosario y recetas). Con una clave de la API de Claude puede escribir código contigo; antes de aplicar un cambio enseña las diferencias y guarda una versión.
 - **Guardado local** (IndexedDB) con historial de versiones, plantillas (incluida una del control remoto), descarga en `.zip`, en un solo `.html` o solo la memoria.
+- **Archivos grandes**: se puede pegar código largo (miles de líneas) sin que se quede pillado: en archivos grandes solo se colorea el trozo que se ve y el corrector no vuelve a revisar los archivos que no han cambiado.
