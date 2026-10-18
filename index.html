@@ -13,7 +13,8 @@
 <!-- Tipografías (si no hay internet, se usan las del sistema y todo sigue funcionando) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<!-- Las fuentes se cargan sin bloquear: si internet va lento o está bloqueado, la página se abre igual con las letras del sistema -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 
 <!-- Aplica el tema guardado ANTES de pintar, para que no haya parpadeo de colores -->
 <script>

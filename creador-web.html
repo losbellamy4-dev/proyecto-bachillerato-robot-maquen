@@ -9,7 +9,8 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%2334e27a'/%3E%3Cpath d='M12 10l-6 6 6 6M20 10l6 6-6 6' fill='none' stroke='%2304130a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Las fuentes se cargan sin bloquear: si internet va lento o está bloqueado, la página se abre igual con las letras del sistema -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <script>
 /* Aplica el tema y el color guardados ANTES de pintar la página (así no parpadea). */
 (function () {
@@ -20,6 +21,31 @@
     document.documentElement.dataset.theme = t;
     document.documentElement.dataset.accent = p.accent || 'green';
   } catch (e) {}
+})();
+</script>
+<script>
+/* Si algo impide arrancar (navegador antiguo, un error…), en vez de dejar la página en blanco
+   se explica qué pasa. Está escrito en JavaScript antiguo para que funcione en cualquier navegador. */
+(function () {
+  var errs = [], t0 = Date.now();
+  window.addEventListener('error', function (e) { if (e && e.message) errs.push(e.message + (e.lineno ? ' (línea ' + e.lineno + ')' : '')); });
+  function check() {
+    var b = document.body;
+    if (!b || b.classList.contains('ready')) return;
+    // el programa está arrancando (por ejemplo, abriendo lo guardado): se le da más tiempo
+    if (window.__cwAlive && Date.now() - t0 < 25000) { setTimeout(check, 2000); return; }
+    var box = document.createElement('div');
+    box.setAttribute('role', 'alert');
+    box.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;background:#060a11;color:#e8eef7;font:15px/1.5 system-ui,sans-serif';
+    var msg = errs.length ? errs.slice(0, 3).join('<br>').replace(/[<>&]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]; }).replace(/&lt;br&gt;/g, '<br>') : 'El navegador no ha podido arrancar el programa.';
+    box.innerHTML = '<div style="max-width:460px"><h2 style="margin:0 0 8px;font-size:20px">No se ha podido abrir el Creador Web</h2>' +
+      '<p style="margin:0 0 10px;color:#9fb0c6">Prueba con <b>Chrome</b>, <b>Edge</b> o <b>Firefox</b> actualizados (en iPhone/iPad, Safari actualizado). Si lo abriste desde la app de archivos del móvil, ábrelo con Chrome.</p>' +
+      '<p style="margin:0 0 14px;font:12px/1.4 ui-monospace,monospace;color:#ff8a8a">' + msg + '</p>' +
+      '<button onclick="location.reload()" style="font:inherit;font-weight:600;padding:9px 16px;border:0;border-radius:10px;background:#34e27a;color:#04130a;cursor:pointer">Volver a intentarlo</button></div>';
+    b.appendChild(box);
+  }
+  document.addEventListener('DOMContentLoaded', function () { setTimeout(check, 2000); });
+  setTimeout(check, 15000); // por si la página no termina nunca de cargar
 })();
 </script>
 <style>
@@ -599,9 +625,104 @@ body.resizing iframe { pointer-events: none; }
 .empty-editor p .btn { margin-top: 6px; }
 .notebar[hidden] { display: none !important; }
 
+/* =====================================================================
+   VISTA DE BLOQUES (como Scratch)
+   ===================================================================== */
+.ed-tools .bk-toggle { width: auto; padding: 0 9px 0 7px; gap: 5px; display: flex; align-items: center; font: 600 12px var(--font); color: var(--muted); }
+.ed-tools .bk-toggle.on { color: var(--on-a); background: rgb(var(--a)); }
+.ed-tools .bk-toggle.on:hover { color: var(--on-a); background: rgb(var(--a) / .85); }
+.editor.blocks-on > .gutter, .editor.blocks-on > .code, .editor.blocks-on > .ro-badge { display: none; }
+.bk-view { position: absolute; inset: 0; z-index: 4; display: flex; flex-direction: column; background: var(--ed-bg); font-family: var(--font); }
+.bk-bar { display: flex; align-items: center; gap: 4px; padding: 5px 8px; border-bottom: 1px solid var(--line); flex: none; min-width: 0; }
+.bk-bar button { height: 28px; min-width: 28px; padding: 0 7px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; color: var(--muted); font: 600 12px var(--font); }
+.bk-bar button:hover:not(:disabled) { color: var(--text); background: var(--faint-2); }
+.bk-bar button:disabled { opacity: .35; cursor: default; }
+.bk-bar #bkZoomIn, .bk-bar #bkZoomOut { font-size: 16px; }
+.bk-sep { width: 1px; height: 18px; background: var(--line-2); margin: 0 4px; }
+.bk-hint { color: var(--muted); font-size: 11.5px; margin-left: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.bk-spacer { flex: 1; }
+.bk-main { flex: 1; min-height: 0; display: flex; }
+.bk-pal { width: 232px; flex: none; display: flex; flex-direction: column; border-right: 1px solid var(--line); background: var(--panel); min-height: 0; transition: background .15s; }
+.bk-pal.trash { background: rgb(var(--danger) / .14); box-shadow: inset 0 0 0 2px rgb(var(--danger) / .6); }
+.bk-view.ro .bk-pal { display: none; }
+.bk-langs { display: flex; gap: 4px; padding: 8px 8px 0; }
+.bk-langs button { flex: 1; height: 26px; border-radius: 7px; font: 700 11px var(--mono); color: var(--muted); background: var(--faint); }
+.bk-langs button.on { color: var(--on-a); background: rgb(var(--a)); }
+.bk-cats { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; border-bottom: 1px solid var(--line); }
+.bk-cats button { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px 3px 6px; border-radius: 999px; font: 600 11px var(--font); color: var(--text); background: var(--faint); }
+.bk-cats button:hover { background: var(--faint-2); }
+.bk-cats i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+.bk-items { flex: 1; overflow: auto; padding: 4px 10px 16px; font-size: 11.5px; display: flex; flex-direction: column; align-items: flex-start; }
+.bk-sec { font: 700 11px var(--font); color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 12px 0 6px; align-self: stretch; }
+.bk-tip { color: var(--muted); font-size: 11.5px; line-height: 1.45; margin-top: 14px; }
+.pal-blk { margin-bottom: 8px; cursor: grab; }
+.pal-blk .blk-slot { min-height: 10px; }
+.bk-ws { flex: 1; min-width: 0; overflow: auto; outline: none; position: relative;
+  background-color: var(--ed-bg); background-image: radial-gradient(var(--faint-2) 1px, transparent 1.2px); background-size: 22px 22px; }
+.bk-canvas { padding: 18px 22px 40vh; min-width: max-content; }
+.bk-canvas.big .blk-list.top > .blk { content-visibility: auto; contain-intrinsic-size: auto 40px; }
+.bk-empty, .bk-msg { color: var(--muted); font-size: 13px; padding: 26px 6px; }
+.bk-msg { text-align: center; display: grid; place-items: center; gap: 6px; padding-top: 60px; }
+.bk-msg h3 { color: var(--text); font-size: 16px; }
+.bk-msg .ic.big { width: 38px; height: 38px; opacity: .5; }
+
+/* --- los bloques --- */
+.blk-list { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-height: 22px; }
+.blk-list.top { gap: 10px; min-height: 60px; }
+.blk { --c: #8C97A8; position: relative; display: flex; flex-direction: column; align-items: stretch; max-width: 100%; color: #fff; font: 700 1em/1.25 var(--font); user-select: none; -webkit-user-select: none; cursor: grab; touch-action: manipulation; }
+.blk-row { position: relative; display: flex; align-items: center; flex-wrap: wrap; gap: .4em; padding: .5em .8em; min-height: 2.4em; background: var(--c); border-radius: .45em; box-shadow: inset 0 -.16em 0 rgb(0 0 0 / .16); text-shadow: 0 1px 0 rgb(0 0 0 / .18); }
+.blk.stack > .blk-row::after, .blk-foot::after { content: ""; position: absolute; left: 1.1em; bottom: -.38em; width: 1.3em; height: .45em; background: var(--c); border-radius: 0 0 .35em .35em; z-index: 1; }
+.blk.hat > .blk-row:first-child { border-radius: 1.3em 1.3em .45em .45em; padding-top: .85em; }
+.blk.c > .blk-row, .blk.hat > .blk-row { border-bottom-left-radius: 0; }
+.blk-row.mid { border-radius: 0 .45em .45em 0; }
+.blk-slot { display: flex; flex-direction: column; border-left: 1.05em solid var(--c); padding: .2em 0 .25em .2em; min-height: 1.8em; }
+.blk-foot { position: relative; height: .9em; min-width: 5em; background: var(--c); border-radius: 0 .45em .45em .45em; box-shadow: inset 0 -.16em 0 rgb(0 0 0 / .16); }
+.blk.cap > .blk-row { border-radius: .45em; }
+.blk.note > .blk-row { color: #4a3f00; text-shadow: none; font-weight: 600; border-radius: .2em; box-shadow: 0 .15em .4em rgb(0 0 0 / .25); }
+.blk.note > .blk-row::after { display: none; }
+.blk .bt { white-space: nowrap; }
+.blk .tg { font: 600 .82em var(--mono); opacity: .78; white-space: nowrap; }
+.blk .bc { font: 500 .9em/1.35 var(--mono); white-space: pre-wrap; word-break: break-word; max-width: 46em; background: rgb(0 0 0 / .16); padding: .15em .45em; border-radius: .35em; }
+.blk .q { opacity: .8; margin: 0 -.25em; }
+.blk .in { font: 600 .92em/1.3 var(--mono); color: #1d2433; background: #fff; border: 0; border-radius: 999px; padding: .2em .6em; min-width: 2.4ch; max-width: 40ch; outline: none; text-shadow: none; box-shadow: inset 0 .08em .2em rgb(0 0 0 / .18); cursor: text; }
+.blk .in:focus { box-shadow: 0 0 0 .15em #fff, 0 0 0 .32em rgb(0 0 0 / .4); }
+.blk .in.k-cond { background: rgb(0 0 0 / .22); color: #fff; border-radius: 0; padding: .2em 1em; clip-path: polygon(.7em 0, calc(100% - .7em) 0, 100% 50%, calc(100% - .7em) 100%, .7em 100%, 0 50%); box-shadow: none; }
+.blk .in.k-name { background: rgb(255 255 255 / .28); color: #fff; box-shadow: inset 0 0 0 .1em rgb(255 255 255 / .35); }
+.blk .in.k-num { min-width: 3ch; }
+.blk .in.k-code { border-radius: .35em; }
+.blk .in.k-com, .blk .in.k-text { max-width: 66ch; }
+.blk.note .in { background: rgb(255 255 255 / .55); color: #4a3f00; box-shadow: none; border-radius: .3em; }
+.blk .in.fake { display: inline-block; pointer-events: none; }
+.blk .in[readonly] { cursor: default; }
+.blk.sel > .blk-row, .blk.sel > .blk-foot, .blk.sel > .blk-slot { filter: drop-shadow(0 0 .25em #fff7a8) drop-shadow(0 0 .1em #fff7a8); }
+.blk.err > .blk-row { box-shadow: inset 0 0 0 .2em rgb(255 77 94), inset 0 -.16em 0 rgb(0 0 0 / .16); }
+.blk.warn > .blk-row { box-shadow: inset 0 0 0 .2em rgb(255 176 32), inset 0 -.16em 0 rgb(0 0 0 / .16); }
+.blk.err > .blk-row::before, .blk.warn > .blk-row::before { content: "!"; position: absolute; right: -.55em; top: -.55em; width: 1.25em; height: 1.25em; border-radius: 50%; display: grid; place-items: center; font: 800 .8em var(--font); color: #fff; background: rgb(255 77 94); box-shadow: 0 0 0 .15em var(--ed-bg); }
+.blk.warn > .blk-row::before { background: rgb(255 176 32); color: #3b2a00; }
+.blk.dragging { opacity: .3; }
+.blk-ghost { position: fixed; left: 0; top: 0; z-index: 1000; pointer-events: none; opacity: .92; filter: drop-shadow(0 .6em 1.2em rgb(0 0 0 / .45)); cursor: grabbing; }
+.blk-mark { position: fixed; left: 0; top: 0; z-index: 999; width: 9em; height: 5px; border-radius: 3px; background: #fff; box-shadow: 0 0 0 2px rgb(var(--a)), 0 0 12px rgb(var(--a) / .8); pointer-events: none; }
+body.bk-dragging, body.bk-dragging * { cursor: grabbing !important; }
+:root[data-theme="light"] .blk.sel > .blk-row, :root[data-theme="light"] .blk.sel > .blk-foot, :root[data-theme="light"] .blk.sel > .blk-slot { filter: drop-shadow(0 0 .2em #f59e0b) drop-shadow(0 0 .1em #f59e0b); }
+
+@media (max-width: 860px) {
+  .ed-tools .bk-toggle span { display: none; }
+  .ed-tools .bk-toggle { width: 34px; padding: 0; justify-content: center; }
+  .bk-hint, .bk-bar button span { display: none; }
+  .bk-main { flex-direction: column; }
+  .bk-pal { width: auto; max-height: 38%; border-right: 0; border-bottom: 1px solid var(--line); }
+  .bk-cats { flex-wrap: nowrap; overflow-x: auto; padding: 6px 8px; }
+  .bk-cats button { flex: none; }
+  .bk-items { flex-direction: row; flex-wrap: nowrap; align-items: flex-start; overflow-x: auto; overflow-y: hidden; gap: 8px; padding: 8px 10px; }
+  .bk-items .bk-sec, .bk-items .bk-tip { display: none; }
+  .pal-blk { flex: none; margin: 0; }
+  .bk-canvas { padding: 12px 12px 40vh; }
+}
+
 </style>
 </head>
 <body data-view="code">
+<noscript><div style="position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;background:#060a11;color:#e8eef7;font:15px/1.5 system-ui,sans-serif;text-align:center"><div><h2>El Creador Web necesita JavaScript</h2><p>Ábrelo con un navegador (Chrome, Edge, Firefox o Safari), no con el visor de archivos del móvil ni desde la vista de código de GitHub.</p></div></div></noscript>
 
 <!-- ==========================================================
      ICONOS (se dibujan una vez y se reutilizan con <use>)
@@ -683,6 +804,8 @@ body.resizing iframe { pointer-events: none; }
   <symbol id="i-panel-bottom" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15h18"/></symbol>
   <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
   <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></symbol>
+  <symbol id="i-blocks" viewBox="0 0 24 24"><path d="M4 4h6v2.2a1.8 1.8 0 1 0 3.6 0V4H20v6h-2.2a1.8 1.8 0 1 0 0 3.6H20V20h-6.4v-2.2a1.8 1.8 0 1 0-3.6 0V20H4z"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
   <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M16 8l-2 6-6 2 2-6z"/></symbol>
 </svg>
 
@@ -751,6 +874,7 @@ body.resizing iframe { pointer-events: none; }
       <div class="tabs-row">
         <div class="tabs" id="tabs" role="tablist"></div>
         <div class="ed-tools">
+          <button id="btnBlocks" class="bk-toggle" title="Ver el código como bloques (como Scratch)" aria-pressed="false"><svg class="ic"><use href="#i-blocks"/></svg><span>Bloques</span></button>
           <button id="btnFind" title="Buscar y reemplazar (Ctrl+F)" aria-label="Buscar"><svg class="ic"><use href="#i-search"/></svg></button>
           <button id="btnFormat" title="Ordenar sangrías (Mayús+Alt+F)" aria-label="Ordenar sangrías"><svg class="ic"><use href="#i-format"/></svg></button>
           <button id="btnComment" title="Comentar o descomentar (Ctrl+/)" aria-label="Comentar"><svg class="ic"><use href="#i-comment"/></svg></button>
@@ -787,6 +911,25 @@ body.resizing iframe { pointer-events: none; }
           </div>
         </div>
         <div class="image-view" id="imageView" hidden><img id="imageImg" alt=""><span class="meta" id="imageMeta"></span></div>
+        <!-- Vista de bloques (como Scratch) -->
+        <div class="bk-view" id="blocksView" hidden>
+          <div class="bk-bar">
+            <button id="bkCode" title="Volver a ver el código"><svg class="ic"><use href="#i-code"/></svg><span>Código</span></button>
+            <span class="bk-sep"></span>
+            <button id="bkUndo" title="Deshacer (Ctrl+Z)"><svg class="ic"><use href="#i-undo"/></svg><span>Deshacer</span></button>
+            <button id="bkDup" title="Duplicar el bloque elegido (Ctrl+D)" aria-label="Duplicar"><svg class="ic"><use href="#i-copy"/></svg></button>
+            <button id="bkDel" title="Borrar el bloque elegido (Supr)" aria-label="Borrar"><svg class="ic"><use href="#i-trash"/></svg></button>
+            <button id="bkGoto" title="Ver el bloque elegido en el código (Enter)" aria-label="Ver en el código"><svg class="ic"><use href="#i-external"/></svg></button>
+            <span class="bk-hint">Arrastra los bloques para moverlos · doble clic: ver el código</span>
+            <span class="bk-spacer"></span>
+            <button id="bkZoomOut" title="Bloques más pequeños" aria-label="Bloques más pequeños">−</button>
+            <button id="bkZoomIn" title="Bloques más grandes" aria-label="Bloques más grandes">+</button>
+          </div>
+          <div class="bk-main">
+            <aside class="bk-pal" id="bkPal" aria-label="Bloques para añadir"></aside>
+            <div class="bk-ws scroll" id="bkWs" tabindex="0" aria-label="Bloques del archivo"></div>
+          </div>
+        </div>
       </div>
       <div class="notebar" id="notebar">
         <button class="nb-toggle" id="noteToggle" aria-expanded="false"><svg class="ic"><use href="#i-note"/></svg>Nota del archivo <small id="noteHint">mini explicación para la memoria</small><span class="dot" id="noteDot" hidden></span><svg class="ic chev"><use href="#i-chev-up"/></svg></button>
@@ -908,6 +1051,8 @@ const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ESC_MAP[c]);
+// Navegadores algo antiguos (Safari < 15.4, Chrome < 98) no tienen structuredClone
+if (typeof structuredClone !== 'function') window.structuredClone = v => JSON.parse(JSON.stringify(v));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -1114,7 +1259,7 @@ const DEFAULT_PREFS = {
   livePreview: true, previewDelay: 700, previewMode: 'safe', device: 'full', followActive: true,
   sbW: 250, rpW: 440, dockH: 190, sidebar: true, right: true, dockOpen: true, dockTab: 'problems', rightTab: 'preview', asTab: 'chat', noteOpen: false,
   aiModel: 'claude-opus-5-5', aiEffort: 'medium', aiContext: true, aiRemember: true,
-  seenWelcome: false, seenTour: false, lastProject: null, autoSnapshotMin: 5,
+  seenWelcome: false, seenTour: false, lastProject: null, autoSnapshotMin: 5, blocks: false, blocksZoom: 1,
 };
 const Prefs = {
   data: { ...DEFAULT_PREFS },
@@ -2733,6 +2878,7 @@ const Find = {
   },
   show(replace) {
     if (!Editor.cur) return;
+    if (typeof Blocks !== 'undefined' && Blocks.on) Blocks.toggle(false); // buscar se hace en el código
     this.active = true; this.bar.hidden = false;
     this.rep.hidden = !replace && !this.rep.value; $('#replOne').hidden = this.rep.hidden; $('#replAll').hidden = this.rep.hidden;
     if (replace) { this.rep.hidden = false; $('#replOne').hidden = false; $('#replAll').hidden = false; }
@@ -3264,6 +3410,1371 @@ const AC = {
 };
 
 /* =====================================================================
+   BLOQUES (1/2): LEER EL CÓDIGO Y CONVERTIRLO EN BLOQUES
+   Cada bloque recuerda en qué trozo del archivo está (s = inicio,
+   e = final). Así, al cambiar un bloque, se cambia ese trozo del código.
+   Un bloque tiene una o varias «filas» (sections). Cada fila tiene
+   partes (texto, huecos para escribir…) y, si es un bloque en forma
+   de C (si…, repetir…, función…), una lista de bloques dentro.
+   El lector es tolerante: si el código tiene errores, enseña lo que
+   puede y el resto lo pone en bloques grises con el código tal cual.
+   ===================================================================== */
+
+/* ---------- Colores (los de Scratch) y nombres ---------- */
+const BK_CAT = {
+  events: ['Eventos', '#FFBF00'], control: ['Control', '#FFAB19'], vars: ['Variables', '#FF8C1A'],
+  funcs: ['Funciones', '#FF6680'], looks: ['Página', '#9966FF'], console: ['Consola', '#CF63CF'],
+  lists: ['Listas', '#FF661A'], sensing: ['Datos', '#5CB1D6'], ops: ['Operadores', '#59C059'], other: ['Otros', '#8C97A8'], comment: ['Notas', '#FEF49C'],
+  hstruct: ['Estructura', '#4C97FF'], htext: ['Texto', '#9966FF'], hmedia: ['Imágenes y vídeo', '#CF63CF'], hform: ['Botones y formularios', '#FFAB19'],
+  hlist: ['Listas y tablas', '#5CB1D6'], hhead: ['Cabeza', '#8C97A8'], hcode: ['Código', '#59C059'],
+  crule: ['Reglas', '#4C97FF'], ctext: ['Letra', '#9966FF'], ccolor: ['Colores', '#CF63CF'], cbox: ['Tamaño y espacio', '#FF8C1A'], clayout: ['Colocar', '#59C059'], ceffect: ['Efectos', '#5CB1D6'],
+};
+const BK_TAGS = {
+  html: ['página', 'hstruct'], head: ['cabeza (no se ve)', 'hhead'], body: ['cuerpo (lo que se ve)', 'hstruct'], title: ['título de la pestaña', 'hhead'],
+  meta: ['dato de la página', 'hhead'], link: ['enlazar un archivo', 'hhead'], script: ['código JavaScript', 'hcode'], style: ['estilos CSS', 'hcode'], base: ['dirección base', 'hhead'], noscript: ['si no hay JavaScript', 'hhead'],
+  div: ['caja', 'hstruct'], section: ['sección', 'hstruct'], header: ['cabecera', 'hstruct'], footer: ['pie de página', 'hstruct'], main: ['contenido principal', 'hstruct'],
+  nav: ['menú', 'hstruct'], article: ['artículo', 'hstruct'], aside: ['lateral', 'hstruct'], template: ['plantilla', 'hstruct'], dialog: ['ventana', 'hstruct'], details: ['desplegable', 'hstruct'], summary: ['resumen del desplegable', 'hstruct'],
+  h1: ['título 1 (el más grande)', 'htext'], h2: ['título 2', 'htext'], h3: ['título 3', 'htext'], h4: ['título 4', 'htext'], h5: ['título 5', 'htext'], h6: ['título 6', 'htext'],
+  p: ['párrafo', 'htext'], span: ['trozo de texto', 'htext'], strong: ['negrita', 'htext'], b: ['negrita', 'htext'], em: ['cursiva', 'htext'], i: ['cursiva', 'htext'], u: ['subrayado', 'htext'], small: ['letra pequeña', 'htext'],
+  br: ['salto de línea', 'htext'], hr: ['línea separadora', 'htext'], blockquote: ['cita', 'htext'], pre: ['texto tal cual', 'htext'], code: ['código', 'htext'], mark: ['resaltado', 'htext'], sub: ['subíndice', 'htext'], sup: ['superíndice', 'htext'], kbd: ['tecla', 'htext'],
+  img: ['imagen', 'hmedia'], video: ['vídeo', 'hmedia'], audio: ['sonido', 'hmedia'], source: ['archivo del vídeo o sonido', 'hmedia'], canvas: ['lienzo para dibujar', 'hmedia'], svg: ['dibujo SVG', 'hmedia'], iframe: ['otra página dentro', 'hmedia'], figure: ['figura', 'hmedia'], figcaption: ['pie de la figura', 'hmedia'], picture: ['imagen adaptable', 'hmedia'],
+  a: ['enlace', 'hform'], button: ['botón', 'hform'], input: ['campo', 'hform'], textarea: ['caja de texto', 'hform'], select: ['lista desplegable', 'hform'], option: ['opción', 'hform'],
+  form: ['formulario', 'hform'], label: ['etiqueta del campo', 'hform'], fieldset: ['grupo de campos', 'hform'], legend: ['título del grupo', 'hform'], progress: ['barra de progreso', 'hform'], output: ['resultado', 'hform'],
+  ul: ['lista con puntos', 'hlist'], ol: ['lista numerada', 'hlist'], li: ['elemento de la lista', 'hlist'], dl: ['lista de definiciones', 'hlist'], dt: ['término', 'hlist'], dd: ['definición', 'hlist'],
+  table: ['tabla', 'hlist'], thead: ['cabecera de la tabla', 'hlist'], tbody: ['cuerpo de la tabla', 'hlist'], tr: ['fila', 'hlist'], td: ['celda', 'hlist'], th: ['celda de título', 'hlist'], caption: ['título de la tabla', 'hlist'],
+};
+const BK_ATTR = { src: 'archivo', href: 'enlace a', alt: 'texto alternativo', type: 'tipo', placeholder: 'pista', value: 'valor', for: 'para', name: 'nombre', rel: 'tipo', content: 'contenido', charset: 'letras', lang: 'idioma', width: 'ancho', height: 'alto', min: 'mínimo', max: 'máximo', step: 'paso', title: 'ayuda', target: 'abrir en', action: 'enviar a', method: 'método' };
+const BK_CSS = {
+  color: 'color del texto', background: 'fondo', 'background-color': 'color de fondo', 'background-image': 'imagen de fondo', 'font-size': 'tamaño de letra', 'font-family': 'tipo de letra',
+  'font-weight': 'grosor de letra', 'font-style': 'estilo de letra', 'text-align': 'alinear el texto', 'line-height': 'altura de línea', 'letter-spacing': 'espacio entre letras', 'text-decoration': 'subrayado',
+  'text-transform': 'mayúsculas', margin: 'margen (fuera)', padding: 'relleno (dentro)', width: 'ancho', height: 'alto', 'max-width': 'ancho máximo', 'min-height': 'alto mínimo', border: 'borde',
+  'border-radius': 'esquinas redondeadas', display: 'cómo se coloca', 'flex-direction': 'dirección', 'justify-content': 'repartir (eje principal)', 'align-items': 'alinear (eje cruzado)', gap: 'separación',
+  'flex-wrap': 'saltar de línea', position: 'posición', top: 'arriba', left: 'izquierda', right: 'derecha', bottom: 'abajo', 'z-index': 'capa', 'grid-template-columns': 'columnas', 'box-shadow': 'sombra',
+  'text-shadow': 'sombra del texto', transition: 'cambio suave', transform: 'transformar', opacity: 'transparencia', cursor: 'puntero del ratón', animation: 'animación', overflow: 'lo que sobresale', filter: 'filtro', 'object-fit': 'ajustar la imagen',
+};
+function bkCssCat(prop) {
+  const p = prop.toLowerCase();
+  if (/^(font|text|line-height|letter|word|white-space)/.test(p)) return 'ctext';
+  if (/^(color|background|accent|caret|fill|stroke)/.test(p)) return 'ccolor';
+  if (/^(margin|padding|width|height|min-|max-|border|box-sizing|outline|aspect)/.test(p)) return 'cbox';
+  if (/^(display|flex|grid|align|justify|place|gap|position|top|left|right|bottom|inset|z-index|order|float|overflow)/.test(p)) return 'clayout';
+  return 'ceffect';
+}
+
+/* ---------- Ayudas comunes ---------- */
+const BkP = {
+  txt: v => ({ t: 'txt', v }),
+  tag: v => ({ t: 'tag', v }),
+  code: (s, e, v) => ({ t: 'code', s, e, v }),
+  /** ¿Es un único texto entre comillas ('hola', "hola" o `hola`)? */
+  isStr(v) {
+    const q = v[0];
+    if (v.length < 2 || (q !== '"' && q !== "'" && q !== '`') || v[v.length - 1] !== q) return false;
+    for (let i = 1; i < v.length - 1; i++) { if (v[i] === '\\') i++; else if (v[i] === q) return false; }
+    return true;
+  },
+  /** Hueco para escribir. kind: str, num, name, expr, cond, attr, text, com, sel, code */
+  inp(kind, s, e, v, extra) {
+    if (kind === 'expr' || kind === 'str') {
+      if (BkP.isStr(v)) return { t: 'in', k: 'str', s: s + 1, e: e - 1, v: v.slice(1, -1), q: v[0], ...extra };
+      kind = /^-?\d+(\.\d+)?$/.test(v) ? 'num' : 'expr';
+    }
+    return { t: 'in', k: kind, s, e, v, ...extra };
+  },
+};
+
+/* =====================================================================
+   JAVASCRIPT
+   ===================================================================== */
+const BkJS = {
+  REGEX_KW: new Set(['return', 'typeof', 'case', 'do', 'else', 'in', 'of', 'new', 'delete', 'void', 'throw', 'yield', 'await', 'instanceof']),
+  PUNC: /(?:>>>=|\.\.\.|===|!==|\*\*=|<<=|>>=|>>>|\?\?=|\|\|=|&&=|=>|==|!=|<=|>=|&&|\|\||\?\?|\?\.(?!\d)|\+\+|--|\+=|-=|\*=|\/=|%=|&=|\|=|\^=|\*\*|<<|>>|[{}()[\];,.<>+\-*/%&|^!~?:=@#])/y,
+  NUM: /(?:0[xXbBoO][\da-fA-F_]+n?|(?:\d[\d_]*\.?\d*|\.\d+)(?:[eE][+-]?\d+)?n?)/y,
+  ID: /[A-Za-z_$À-￿][\w$À-￿]*/y,
+  REGEX: /\/(?![*/])(?:\\.|\[(?:\\.|[^\]\\\n])*\]|[^/\\\n[])+\/[a-z]*/y,
+
+  /** Trocea el código en piezas: palabras, números, textos, signos y comentarios. */
+  tokens(code) {
+    const out = [], n = code.length;
+    let i = 0, nl = false, prev = null;
+    const push = (t, s, e) => { const tok = { t, s, e, v: code.slice(s, e), nl }; out.push(tok); nl = false; if (t !== 'c') prev = tok; };
+    const sticky = (re, at) => { re.lastIndex = at; const m = re.exec(code); return m ? m[0].length : 0; };
+    // `texto ${código}`: dentro de ${ } puede haber otros textos con ` (se leen enteros)
+    const scanTpl = j => {
+      j++;
+      while (j < n) {
+        const d = code[j];
+        if (d === '\\') { j += 2; continue; }
+        if (d === '`') return j + 1;
+        if (d === '$' && code[j + 1] === '{') { j = scanExpr(j + 2); continue; }
+        j++;
+      }
+      return n;
+    };
+    const scanExpr = j => {
+      let depth = 0;
+      while (j < n) {
+        const d = code[j];
+        if (d === '`') { j = scanTpl(j); continue; }
+        if (d === '"' || d === "'") { let k = j + 1; while (k < n && code[k] !== d && code[k] !== '\n') { if (code[k] === '\\') k++; k++; } j = k + 1; continue; }
+        if (d === '{') depth++;
+        else if (d === '}') { if (depth === 0) return j + 1; depth--; }
+        j++;
+      }
+      return n;
+    };
+    while (i < n) {
+      const c = code[i];
+      if (c === '\n') { nl = true; i++; continue; }
+      if (c <= ' ' || c === ' ' || c === '﻿') { i++; continue; }
+      if (c === '/' && code[i + 1] === '/') { let e = code.indexOf('\n', i); if (e < 0) e = n; push('c', i, e); i = e; continue; }
+      if (c === '/' && code[i + 1] === '*') { let e = code.indexOf('*/', i + 2); e = e < 0 ? n : e + 2; push('c', i, e); i = e; continue; }
+      if (c === '"' || c === "'") {
+        let j = i + 1; while (j < n && code[j] !== c && code[j] !== '\n') { if (code[j] === '\\') j++; j++; }
+        const e = j < n && code[j] === c ? j + 1 : Math.min(j, n); push('s', i, e); i = e; continue;
+      }
+      if (c === '`') { const e = Math.min(n, scanTpl(i)); push('s', i, e); i = e; continue; }
+      let len;
+      if (/[0-9]/.test(c) || (c === '.' && /[0-9]/.test(code[i + 1] || ''))) { len = sticky(this.NUM, i); if (len) { push('n', i, i + len); i += len; continue; } }
+      if ((len = sticky(this.ID, i))) { push('id', i, i + len); i += len; continue; }
+      if (c === '/' && (!prev || (prev.t === 'p' && !/^[)\]}]$/.test(prev.v)) || (prev.t === 'id' && this.REGEX_KW.has(prev.v)))) {
+        if ((len = sticky(this.REGEX, i))) { push('r', i, i + len); i += len; continue; }
+      }
+      len = sticky(this.PUNC, i) || 1;
+      push('p', i, i + len); i += len;
+    }
+    return out;
+  },
+
+  /**
+   * Convierte un código JavaScript en una lista de bloques.
+   * base: dónde empieza este código dentro del archivo (para el JS de un <script>).
+   */
+  parse(code, base = 0, embedded = false) {
+    const T = this.tokens(code), n = T.length;
+    const pair = new Int32Array(n).fill(-1);
+    const OPEN = { '(': ')', '[': ']', '{': '}' };
+    const st = [];
+    for (let i = 0; i < n; i++) {
+      const t = T[i]; if (t.t !== 'p') continue;
+      if (OPEN[t.v]) st.push(i);
+      else if (t.v === ')' || t.v === ']' || t.v === '}') {
+        for (let k = st.length - 1; k >= 0; k--) if (OPEN[T[st[k]].v] === t.v) { pair[st[k]] = i; pair[i] = st[k]; st.length = k; break; }
+      }
+    }
+    const { txt, inp } = BkP;
+    const V = i => (i < n ? T[i].v : '');
+    const P = (i, v) => i < n && T[i].t === 'p' && T[i].v === v;
+    const W = (i, v) => i < n && T[i].t === 'id' && T[i].v === v;
+    const S = i => base + (i < n ? T[i].s : code.length), E = i => base + (i < n ? T[i].e : code.length);
+    const sig = i => { while (i < n && T[i].t === 'c') i++; return i; };
+    const src = (a, b) => (a < b ? code.slice(T[a].s, T[b - 1].e) : '');
+    /** Hueco con las piezas a..b-1 (si está vacío, un hueco vacío en la posición de b). */
+    const tin = (kind, a, b) => { if (a >= b) return inp(kind, S(a), S(a), ''); return inp(kind, S(a), E(b - 1), src(a, b)); };
+
+    const CONT_AFTER = new Set(['=', '+', '-', '*', '/', '%', '**', '&&', '||', '??', '?', ':', ',', '.', '?.', '=>', '!', '~', '==', '===', '!=', '!==', '<', '>', '<=', '>=', '+=', '-=', '*=', '/=', '%=', '**=', '&', '|', '^', '<<', '>>', '>>>', '&&=', '||=', '??=', '...', '&=', '|=', '^=']);
+    const CONT_BEFORE = new Set(['.', '?.', '=>', '?', ':', '*', '/', '%', '**', '&&', '||', '??', '==', '===', '!=', '!==', '<', '>', '<=', '>=', '=', '+=', '-=', '*=', '/=', '%=', ',', ')', ']', '&', '|', '^', '<<', '>>', '>>>']);
+    const KW_AFTER = new Set(['in', 'of', 'instanceof', 'new', 'typeof', 'void', 'delete', 'await', 'yield', 'else', 'case', 'extends']);
+    const continues = (prev, t) => (prev.t === 'p' && CONT_AFTER.has(prev.v)) || (prev.t === 'id' && KW_AFTER.has(prev.v)) || (t.t === 'p' && CONT_BEFORE.has(t.v)) || (t.t === 'id' && (t.v === 'in' || t.v === 'of' || t.v === 'instanceof'));
+    /** Dónde acaba una instrucción simple (incluye el ; si lo hay). */
+    const exprEnd = (i, b) => {
+      let k = i, prev = null;
+      while (k < b) {
+        const t = T[k];
+        if (t.t === 'c') { k++; continue; }
+        if (prev && t.nl && !continues(prev, t)) { let r = k; while (r - 1 > i && T[r - 1].t === 'c' && T[r - 1].nl) r--; return r; } // los comentarios de las líneas de en medio son bloques aparte
+        if (t.t === 'p') {
+          if (t.v === ';') return k + 1;
+          if (t.v === '}' || t.v === ')' || t.v === ']') return k > i ? k : k + 1;
+          if (OPEN[t.v]) { const p = pair[k]; if (p < 0 || p >= b) return b; prev = T[p]; k = p + 1; continue; }
+        }
+        prev = t; k++;
+      }
+      return b;
+    };
+    const node = (kind, a, endTok, cat, sections, shape) => {
+      let last = Math.min(endTok, n) - 1; while (last > a && T[last].t === 'c') last--;
+      const nd = { lang: 'js', kind, s: S(a), e: E(last), cat, sections, shape: shape || (sections.some(x => x.list) ? 'c' : 'stack') };
+      for (const sec of sections) if (sec.list) { sec.list.owner = nd; if (sec.list.broken) nd.open = true; }
+      return nd;
+    };
+    const mkList = (a, b, openIdx) => {
+      const L = { lang: 'js', kids: [], s: E(openIdx), e: S(b), ownerPos: S(openIdx) };
+      fill(L, a, b);
+      return L;
+    };
+    const body = (j, b) => {
+      if (P(j, '{')) {
+        const close = pair[j] >= 0 && pair[j] < b ? pair[j] : -1;
+        if (close < 0) { const L = mkList(j + 1, b, j); L.broken = true; return { list: L, next: b }; }
+        return { list: mkList(j + 1, close, j), next: close + 1 };
+      }
+      if (j >= b) return { list: { lang: 'js', kids: [], s: S(j), e: S(j), locked: true }, next: j };
+      const r = stmt(j, b);
+      return { list: { lang: 'js', kids: [r.node], s: r.node.s, e: r.node.e, locked: true }, next: r.next };
+    };
+    const comment = i => {
+      const t = T[i], v = t.v;
+      if (v.startsWith('//')) return { lang: 'js', kind: 'comment', s: S(i), e: E(i), cat: 'comment', shape: 'note', sections: [{ parts: [inp('com', S(i) + 2, E(i), v.slice(2).trim())] }] };
+      const inner = v.slice(2, v.endsWith('*/') ? -2 : undefined);
+      const one = !inner.includes('\n');
+      return { lang: 'js', kind: 'comment', s: S(i), e: E(i), cat: 'comment', shape: 'note', sections: [{ parts: [one ? inp('com', S(i) + 2, E(i) - (v.endsWith('*/') ? 2 : 0), inner.trim(), { block: true }) : BkP.code(S(i), E(i), inner.replace(/^\s*\*?\s?/gm, '').trim())] }] };
+    };
+    const fill = (L, a, b) => {
+      let i = a;
+      while (i < b) {
+        const t = T[i];
+        if (t.t === 'c') { L.kids.push(comment(i)); i++; continue; }
+        if (P(i, ';')) { i++; continue; }
+        if (t.t === 'p' && (t.v === '}' || t.v === ')' || t.v === ']')) { L.kids.push(raw(i, i + 1)); i++; continue; }
+        const r = stmt(i, b);
+        L.kids.push(r.node);
+        i = Math.max(r.next, i + 1);
+      }
+    };
+    const raw = (a, z) => {
+      const s = S(a), e = E(z - 1), v = code.slice(s - base, e - base);
+      const part = !v.includes('\n') && v.length <= 90 ? inp('code', s, e, v) : BkP.code(s, e, v);
+      return { lang: 'js', kind: 'raw', s, e, cat: 'other', shape: 'stack', sections: [{ parts: [part] }] };
+    };
+
+    /* ---- instrucciones con forma propia ---- */
+    const stmt = (i, b) => {
+      const t = T[i];
+      if (t.t === 'id') {
+        switch (t.v) {
+          case 'if': return ifStmt(i, b);
+          case 'for': case 'while': return loopStmt(i, b);
+          case 'do': return doStmt(i, b);
+          case 'function': return funcStmt(i, b, i);
+          case 'async': if (W(sig(i + 1), 'function')) return funcStmt(sig(i + 1), b, i); break;
+          case 'class': return classStmt(i, b);
+          case 'switch': return switchStmt(i, b);
+          case 'try': return tryStmt(i, b);
+          case 'export': {
+            let j = sig(i + 1); if (W(j, 'default')) j = sig(j + 1);
+            if (j < b && ['function', 'class', 'async'].includes(V(j))) { const r = stmt(j, b); r.node.s = S(i); return r; }
+            break;
+          }
+        }
+      }
+      if (P(i, '{')) {
+        const r = body(i, b);
+        return { node: node('block', i, r.next, 'control', [{ parts: [txt('grupo de instrucciones')], list: r.list }]), next: r.next };
+      }
+      const end = Math.max(exprEnd(i, b), i + 1);
+      return { node: simple(i, end), next: end };
+    };
+    const ifStmt = (i, b) => {
+      const sections = [];
+      let k = i, end = i + 1, first = true;
+      for (;;) {
+        const po = sig(k + 1);
+        let cond = inp('cond', S(po), S(po), ''), after = po;
+        if (P(po, '(') && pair[po] > po) { cond = tin('cond', po + 1, pair[po]); after = pair[po] + 1; }
+        const bd = body(sig(after), b);
+        sections.push({ parts: [txt(first ? 'si' : 'si no, si'), { ...cond, k: 'cond' }, txt('entonces')], list: bd.list });
+        end = bd.next; first = false;
+        const el = sig(end);
+        if (el < b && W(el, 'else')) {
+          const nx = sig(el + 1);
+          if (W(nx, 'if')) { k = nx; continue; }
+          const eb = body(nx, b);
+          sections.push({ parts: [txt('si no')], list: eb.list });
+          end = eb.next;
+        }
+        break;
+      }
+      return { node: node('if', i, end, 'control', sections), next: end };
+    };
+    const loopStmt = (i, b) => {
+      const kw = V(i), po = sig(i + 1);
+      let hs = po, he = po, after = po;
+      if (P(po, '(') && pair[po] > po) { hs = po + 1; he = pair[po]; after = pair[po] + 1; }
+      const bd = body(sig(after), b);
+      let parts;
+      if (kw === 'while') parts = src(hs, he).trim() === 'true' ? [txt('repetir para siempre')] : [txt('repetir mientras'), { ...tin('cond', hs, he), k: 'cond' }];
+      else parts = forParts(hs, he);
+      return { node: node(kw, i, bd.next, 'control', [{ parts, list: bd.list }]), next: bd.next };
+    };
+    const forParts = (hs, he) => {
+      // for (const x of lista) / for (const k in objeto)
+      for (let k = hs; k < he; k++) {
+        if (OPEN[V(k)] && T[k].t === 'p' && pair[k] > k) { k = pair[k]; continue; }
+        if (T[k].t === 'id' && (T[k].v === 'of' || T[k].v === 'in') && k > hs) {
+          let a = hs; if (['const', 'let', 'var'].includes(V(a))) a = sig(a + 1);
+          return T[k].v === 'of'
+            ? [txt('para cada'), tin('name', a, k), txt('de'), tin('expr', k + 1, he)]
+            : [txt('para cada nombre'), tin('name', a, k), txt('de'), tin('expr', k + 1, he)];
+        }
+      }
+      // for (let i = 0; i < 10; i++)
+      const semis = [];
+      for (let k = hs; k < he; k++) { if (OPEN[V(k)] && T[k].t === 'p' && pair[k] > k) { k = pair[k]; continue; } if (P(k, ';')) semis.push(k); }
+      if (semis.length === 2) {
+        const [s1, s2] = semis;
+        let a = hs; if (['let', 'var', 'const'].includes(V(a))) a = sig(a + 1);
+        const name = V(a);
+        // repetir N veces: i = 0; i < N; i++
+        if (T[a] && T[a].t === 'id' && P(sig(a + 1), '=') && src(sig(sig(a + 1) + 1), s1) === '0' && V(sig(s1 + 1)) === name && P(sig(sig(s1 + 1) + 1), '<') && src(s2 + 1, he).replace(/\s/g, '') === name + '++') {
+          const lt = sig(sig(s1 + 1) + 1);
+          return [txt('repetir'), tin('expr', lt + 1, s2), txt('veces'), { t: 'tag', v: `(cuenta con ${name})` }];
+        }
+        return [txt('repetir desde'), tin('code', hs, s1), txt('mientras'), { ...tin('cond', s1 + 1, s2), k: 'cond' }, txt('y cada vez'), tin('code', s2 + 1, he)];
+      }
+      return [txt('repetir'), tin('code', hs, he)];
+    };
+    const doStmt = (i, b) => {
+      const bd = body(sig(i + 1), b);
+      let end = bd.next, cond = null;
+      const w = sig(end);
+      if (W(w, 'while')) {
+        const po = sig(w + 1);
+        if (P(po, '(') && pair[po] > po) { cond = { ...tin('cond', po + 1, pair[po]), k: 'cond' }; end = pair[po] + 1; if (P(sig(end), ';')) end = sig(end) + 1; }
+      }
+      const sections = [{ parts: [txt('repetir')], list: bd.list }];
+      if (cond) sections.push({ parts: [txt('mientras'), cond] });
+      return { node: node('do', i, end, 'control', sections), next: end };
+    };
+    const funcStmt = (fi, b, start) => {
+      let k = sig(fi + 1); if (P(k, '*')) k = sig(k + 1);
+      let name = null;
+      if (k < n && T[k].t === 'id') { name = tin('name', k, k + 1); k = sig(k + 1); }
+      let params = inp('expr', S(k), S(k), '');
+      if (P(k, '(') && pair[k] > k) { params = tin('expr', k + 1, pair[k]); k = sig(pair[k] + 1); }
+      const bd = body(k, b);
+      const parts = [txt('definir'), name || txt('función'), txt('('), { ...params, k: 'expr', ph: 'sin datos' }, txt(')')];
+      return { node: node('function', start, bd.next, 'funcs', [{ parts, list: bd.list }], 'hat'), next: bd.next };
+    };
+    const classStmt = (i, b) => {
+      let k = sig(i + 1);
+      const parts = [txt('clase')];
+      if (k < n && T[k].t === 'id' && V(k) !== 'extends') { parts.push(tin('name', k, k + 1)); k = sig(k + 1); }
+      if (W(k, 'extends')) { const a = k + 1; while (k < b && !P(k, '{')) k++; parts.push(txt('basada en'), tin('expr', a, k)); }
+      while (k < b && !P(k, '{')) k++;
+      if (!P(k, '{')) return { node: raw(i, Math.max(k, i + 1)), next: Math.max(k, i + 1) };
+      const close = pair[k] > k && pair[k] < b ? pair[k] : b;
+      const L = { lang: 'js', kids: [], s: E(k), e: S(close), ownerPos: S(k), accepts: 'member' };
+      let m = k + 1;
+      while (m < close) {
+        if (T[m].t === 'c') { L.kids.push(comment(m)); m++; continue; }
+        if (P(m, ';')) { m++; continue; }
+        let q = m, paren = -1;
+        while (q < close) { if (P(q, '(')) { paren = q; break; } if (P(q, '=') || P(q, ';') || P(q, '{') || (q > m && T[q].nl)) break; q++; }
+        const bo = paren >= 0 && pair[paren] > paren ? sig(pair[paren] + 1) : -1;
+        if (bo >= 0 && P(bo, '{')) {
+          const nm = src(m, paren).trim();
+          const bd = body(bo, close);
+          const mparts = nm === 'constructor' ? [txt('al crear el objeto, con'), tin('expr', paren + 1, pair[paren])] : [txt('método'), tin('name', m, paren), txt('('), tin('expr', paren + 1, pair[paren]), txt(')')];
+          const md = node('method', m, bd.next, 'funcs', [{ parts: mparts, list: bd.list }], 'hat');
+          md.member = true; L.kids.push(md);
+          m = bd.next; continue;
+        }
+        const end = Math.max(exprEnd(m, close), m + 1);
+        const fd = simple(m, end); fd.member = true; L.kids.push(fd); m = end;
+      }
+      const end = close < b ? close + 1 : b;
+      if (close >= b) L.broken = true;
+      return { node: node('class', i, end, 'funcs', [{ parts, list: L }]), next: end };
+    };
+    const switchStmt = (i, b) => {
+      const po = sig(i + 1);
+      if (!P(po, '(') || pair[po] < 0) { const end = Math.max(exprEnd(i, b), i + 1); return { node: raw(i, end), next: end }; }
+      const disc = tin('expr', po + 1, pair[po]);
+      const open = sig(pair[po] + 1);
+      if (!P(open, '{')) { const end = Math.max(exprEnd(i, b), i + 1); return { node: raw(i, end), next: end }; }
+      const close = pair[open] > open && pair[open] < b ? pair[open] : b;
+      const marks = [];
+      for (let k = open + 1; k < close; k++) {
+        if (T[k].t === 'p' && OPEN[T[k].v] && pair[k] > k) { k = pair[k]; continue; }
+        if (W(k, 'case') || W(k, 'default')) marks.push(k);
+      }
+      const sections = [{ parts: [txt('según el valor de'), disc] }];
+      marks.forEach((mk, x) => {
+        const nextMark = x + 1 < marks.length ? marks[x + 1] : close;
+        let colon = mk + 1;
+        while (colon < nextMark && !P(colon, ':')) { if (T[colon].t === 'p' && OPEN[T[colon].v] && pair[colon] > colon) colon = pair[colon]; colon++; }
+        const L = { lang: 'js', kids: [], s: E(colon), e: S(nextMark), ownerPos: S(mk) };
+        fill(L, colon + 1, nextMark);
+        sections.push({ parts: W(mk, 'default') ? [txt('en cualquier otro caso')] : [txt('si es'), tin('expr', mk + 1, colon)], list: L });
+      });
+      const end = close < b ? close + 1 : b;
+      return { node: node('switch', i, end, 'control', sections), next: end };
+    };
+    const tryStmt = (i, b) => {
+      const sections = [];
+      let bd = body(sig(i + 1), b);
+      sections.push({ parts: [txt('intentar')], list: bd.list });
+      let end = bd.next, k = sig(end);
+      if (W(k, 'catch')) {
+        let j = sig(k + 1); const parts = [txt('si hay un error')];
+        if (P(j, '(') && pair[j] > j) { parts.push(txt('('), tin('name', j + 1, pair[j]), txt(')')); j = sig(pair[j] + 1); }
+        bd = body(j, b); sections.push({ parts, list: bd.list }); end = bd.next; k = sig(end);
+      }
+      if (W(k, 'finally')) { bd = body(sig(k + 1), b); sections.push({ parts: [txt('al final, siempre')], list: bd.list }); end = bd.next; }
+      return { node: node('try', i, end, 'control', sections), next: end };
+    };
+
+    /* ---- instrucciones simples: se reconocen las más típicas ---- */
+    const simple = (a, end) => {
+      let z = end; while (z > a && (T[z - 1].t === 'c' || P(z - 1, ';'))) z--;
+      if (z <= a) return raw(a, end);
+      // cuerpos de funciones { } que hay dentro (flechas y function)
+      const bodies = [];
+      for (let k = a; k < z; k++) {
+        if (P(k, '=>')) { const j = sig(k + 1); if (P(j, '{') && pair[j] > j && pair[j] < z) { bodies.push(j); k = pair[j]; } continue; }
+        if (W(k, 'function')) {
+          let j = sig(k + 1); if (P(j, '*')) j = sig(j + 1);
+          if (j < n && T[j].t === 'id') j = sig(j + 1);
+          if (P(j, '(') && pair[j] > j) { const o = sig(pair[j] + 1); if (P(o, '{') && pair[o] > o && pair[o] < z) { bodies.push(o); k = pair[o]; } }
+        }
+      }
+      const s0 = T[a].s, text = code.slice(s0, T[z - 1].e);
+      // texto «tapado»: el contenido de los cuerpos se cambia por espacios (mismas posiciones)
+      let masked = text;
+      for (const o of bodies) { const x = T[o].e - s0, y = T[pair[o]].s - s0; masked = masked.slice(0, x) + ' '.repeat(y - x) + masked.slice(y); }
+      const lists = bodies.map(o => mkList(o + 1, pair[o], o));
+      const nd = BkJS.recognize(masked, text, base + s0, lists);
+      if (nd) { nd.s = S(a); nd.e = E(end - 1); for (const sec of nd.sections) if (sec.list) sec.list.owner = nd; return nd; }
+      // genérico: el código tal cual, con sus funciones dentro
+      if (!bodies.length) return raw(a, end);
+      const sections = [];
+      let from = a;
+      bodies.forEach((o, x) => {
+        const head = code.slice(T[from].s, T[o].s).trim();
+        sections.push({ parts: [BkP.code(S(from), S(o), head || '…')], list: lists[x] });
+        from = pair[o] + 1;
+      });
+      const tail = from < end ? code.slice(T[from].s, T[end - 1].e).trim() : '';
+      if (tail && !/^[)\];,\s]*$/.test(tail)) sections.push({ parts: [BkP.code(S(from), E(end - 1), tail)] });
+      return node('expr', a, end, 'other', sections);
+    };
+
+    const root = { lang: 'js', kids: [], s: base, e: base + code.length, top: !embedded, ownerPos: base };
+    fill(root, 0, n);
+    return root;
+  },
+
+  /* ---------- Reconocer instrucciones típicas y ponerles nombre en español ---------- */
+  FN: String.raw`(?:async\s*)?(?:function\s*\*?\s*[\w$]*\s*\(([^)]*)\)|\(([^)]*)\)\s*=>|([\w$]+)\s*=>)\s*\{\s*\}`,
+  _rules: null,
+  rules() {
+    if (this._rules) return this._rules;
+    const F = this.FN;
+    const R = (src, make) => { try { return { re: new RegExp('^' + src.replace(/\{FN\}/g, F) + '\\s*$', 'ds'), make }; } catch (e) { return null; } };
+    const ev = name => (EVENT_ES[name] ? `(${EVENT_ES[name]})` : '');
+    this._rules = [
+      R(String.raw`(document|window)\.addEventListener\(\s*(['"\x60])(DOMContentLoaded|load)\2\s*,\s*{FN}\s*\)`, (m, I) => ({ cat: 'events', shape: 'hat', parts: [BkP.txt(m[3] === 'load' ? 'cuando la página termine de cargar' : 'cuando la página esté lista')], body: true })),
+      R(String.raw`(document|window)\.addEventListener\(\s*((['"\x60])(keydown|keyup)\3)\s*,\s*{FN}\s*\)`, (m, I) => ({ cat: 'events', shape: 'hat', parts: [BkP.txt(m[4] === 'keyup' ? 'cuando se suelte una tecla' : 'cuando se pulse una tecla'), BkP.tag('(la tecla está en ' + ((m[5] || m[6] || m[7] || 'e').split(',')[0].trim() || 'e') + '.key)')], body: true })),
+      R(String.raw`([\s\S]+?)\.addEventListener\(\s*((['"\x60])([\w:-]+)\3)\s*,\s*{FN}\s*(?:,[^)]*)?\)`, (m, I) => ({ cat: 'events', shape: 'hat', parts: [BkP.txt('cuando'), I(1, 'expr'), BkP.txt('reciba'), I(2, 'str'), BkP.tag(ev(m[4]))], body: true })),
+      R(String.raw`([\s\S]+?)\.addEventListener\(\s*((['"\x60])([\w:-]+)\3)\s*,\s*([\w$.]+)\s*\)`, (m, I) => ({ cat: 'events', parts: [BkP.txt('cuando'), I(1, 'expr'), BkP.txt('reciba'), I(2, 'str'), BkP.tag(ev(m[4])), BkP.txt('ejecutar'), I(5, 'name')] })),
+      R(String.raw`([\w$.\[\]'"]+?)\.on([a-z]+)\s*=\s*{FN}`, (m, I) => ({ cat: 'events', shape: 'hat', parts: [BkP.txt('cuando'), I(1, 'expr'), BkP.txt('reciba'), I(2, 'name'), BkP.tag(ev(m[2]))], body: true })),
+      R(String.raw`setTimeout\(\s*{FN}\s*,\s*([\s\S]+?)\s*\)`, (m, I) => ({ cat: 'control', parts: [BkP.txt('esperar'), I(4, 'expr'), BkP.txt('milisegundos y después')], body: true })),
+      R(String.raw`(?:(?:const|let|var)\s+([\w$]+)\s*=\s*)?setInterval\(\s*{FN}\s*,\s*([\s\S]+?)\s*\)`, (m, I) => ({ cat: 'control', parts: [BkP.txt('cada'), I(5, 'expr'), BkP.txt('milisegundos, repetir'), ...(m[1] ? [BkP.tag('(guardado en'), I(1, 'name'), BkP.tag(')')] : [])], body: true })),
+      R(String.raw`([\s\S]+?)\.forEach\(\s*(?:async\s*)?(?:\(\s*([\w$]+)[^)]*\)\s*=>|([\w$]+)\s*=>|function\s*\(\s*([\w$]+)[^)]*\))\s*\{\s*\}\s*\)`, (m, I) => ({ cat: 'lists', parts: [BkP.txt('para cada'), I(m[2] ? 2 : m[3] ? 3 : 4, 'name'), BkP.txt('de'), I(1, 'expr')], body: true })),
+      R(String.raw`(?:export\s+)?(?:const|let|var)\s+([\w$]+)\s*=\s*(?:async\s*)?(?:function\s*\*?\s*[\w$]*\s*\(([^)]*)\)|\(([^)]*)\)\s*=>|([\w$]+)\s*=>)\s*\{\s*\}`, (m, I) => ({ cat: 'funcs', shape: 'hat', parts: [BkP.txt('definir'), I(1, 'name'), BkP.txt('('), { ...I(m[2] != null ? 2 : m[3] != null ? 3 : 4, 'expr'), ph: 'sin datos' }, BkP.txt(')')], body: true })),
+      R(String.raw`(?:const|let|var)\s+([\w$]+)\s*=\s*document\.(getElementById|querySelector|querySelectorAll)\(\s*((['"\x60])[^'"\x60]*\4)\s*\)`, (m, I) => ({ cat: 'looks', parts: [BkP.txt('guardar en'), I(1, 'name'), BkP.txt(m[2] === 'querySelectorAll' ? 'todos los elementos' : m[2] === 'getElementById' ? 'el elemento con id' : 'el elemento'), I(3, 'str')] })),
+      R(String.raw`(const|let|var)\s+([\w$]+)\s*=\s*([\s\S]+)`, (m, I) => ({ cat: /^\s*\[/.test(m[3]) ? 'lists' : 'vars', parts: [BkP.txt(m[1] === 'const' ? 'crear la constante' : 'crear la variable'), I(2, 'name'), BkP.txt('='), I(3, 'expr')] })),
+      R(String.raw`(let|var)\s+([\w$]+)`, (m, I) => ({ cat: 'vars', parts: [BkP.txt('crear la variable'), I(2, 'name')] })),
+      R(String.raw`console\.(log|warn|error|info|table)\(([\s\S]*)\)`, (m, I) => ({ cat: 'console', parts: [BkP.txt(m[1] === 'error' ? 'mostrar un error en la consola' : m[1] === 'warn' ? 'mostrar un aviso en la consola' : 'mostrar en la consola'), I(2, 'expr')] })),
+      R(String.raw`alert\(([\s\S]*)\)`, (m, I) => ({ cat: 'console', parts: [BkP.txt('mostrar el aviso'), I(1, 'expr')] })),
+      R(String.raw`([\s\S]+?)\.(textContent|innerText|innerHTML)\s*(=|\+=)\s*([\s\S]+)`, (m, I) => ({ cat: 'looks', parts: [BkP.txt((m[3] === '+=' ? 'añadir al ' : 'poner el ') + (m[2] === 'innerHTML' ? 'HTML de' : 'texto de')), I(1, 'expr'), BkP.txt(m[3] === '+=' ? '' : 'a'), I(4, 'expr')].filter(x => x.v !== '' || x.t !== 'txt') })),
+      R(String.raw`([\s\S]+?)\.style\.([\w$]+)\s*=\s*([\s\S]+)`, (m, I) => ({ cat: 'looks', parts: [BkP.txt('cambiar el estilo'), I(2, 'name'), BkP.txt('de'), I(1, 'expr'), BkP.txt('a'), I(3, 'expr')] })),
+      R(String.raw`([\s\S]+?)\.classList\.(add|remove|toggle)\(([\s\S]+)\)`, (m, I) => ({ cat: 'looks', parts: m[2] === 'add' ? [BkP.txt('añadir la clase'), I(3, 'expr'), BkP.txt('a'), I(1, 'expr')] : m[2] === 'remove' ? [BkP.txt('quitar la clase'), I(3, 'expr'), BkP.txt('de'), I(1, 'expr')] : [BkP.txt('poner o quitar la clase'), I(3, 'expr'), BkP.txt('en'), I(1, 'expr')] })),
+      R(String.raw`([\s\S]+?)\.hidden\s*=\s*(true|false)`, (m, I) => ({ cat: 'looks', parts: [BkP.txt(m[2] === 'true' ? 'ocultar' : 'mostrar'), I(1, 'expr')] })),
+      R(String.raw`([\s\S]+?)\.(value|src|href|disabled|checked)\s*=\s*([\s\S]+)`, (m, I) => ({ cat: 'looks', parts: [BkP.txt('poner ' + { value: 'el valor', src: 'el archivo', href: 'el enlace', disabled: 'desactivado', checked: 'marcado' }[m[2]] + ' de'), I(1, 'expr'), BkP.txt('a'), I(3, 'expr')] })),
+      R(String.raw`([\w$.\[\]]+)\.(push|unshift)\(([\s\S]+)\)`, (m, I) => ({ cat: 'lists', parts: [BkP.txt('añadir'), I(3, 'expr'), BkP.txt(m[2] === 'push' ? 'al final de' : 'al principio de'), I(1, 'name')] })),
+      R(String.raw`localStorage\.setItem\(([\s\S]+?),\s*([\s\S]+)\)`, (m, I) => ({ cat: 'sensing', parts: [BkP.txt('guardar en el navegador'), I(1, 'expr'), BkP.txt('='), I(2, 'expr')] })),
+      R(String.raw`localStorage\.removeItem\(([\s\S]+)\)`, (m, I) => ({ cat: 'sensing', parts: [BkP.txt('borrar del navegador'), I(1, 'expr')] })),
+      R(String.raw`([\w$.\[\]'"]+?)\s*(\+\+|--)`, (m, I) => ({ cat: 'vars', parts: [BkP.txt(m[2] === '++' ? 'sumar 1 a' : 'restar 1 a'), I(1, 'name')] })),
+      R(String.raw`(\+\+|--)\s*([\w$.\[\]'"]+)`, (m, I) => ({ cat: 'vars', parts: [BkP.txt(m[1] === '++' ? 'sumar 1 a' : 'restar 1 a'), I(2, 'name')] })),
+      R(String.raw`([\w$.\[\]'"]+?)\s*(\+=|-=|\*=|\/=)\s*([\s\S]+)`, (m, I) => ({ cat: 'vars', parts: m[2] === '+=' ? [BkP.txt('sumar'), I(3, 'expr'), BkP.txt('a'), I(1, 'name')] : m[2] === '-=' ? [BkP.txt('restar'), I(3, 'expr'), BkP.txt('a'), I(1, 'name')] : m[2] === '*=' ? [BkP.txt('multiplicar'), I(1, 'name'), BkP.txt('por'), I(3, 'expr')] : [BkP.txt('dividir'), I(1, 'name'), BkP.txt('entre'), I(3, 'expr')] })),
+      R(String.raw`([\w$.\[\]'"]+?)\s*=(?!=)\s*([\s\S]+)`, (m, I) => ({ cat: 'vars', parts: [BkP.txt('fijar'), I(1, 'name'), BkP.txt('a'), I(2, 'expr')] })),
+      R(String.raw`return(?:\s+([\s\S]+))?`, (m, I) => ({ cat: 'funcs', shape: 'cap', parts: m[1] ? [BkP.txt('devolver'), I(1, 'expr')] : [BkP.txt('terminar la función')] })),
+      R(String.raw`break`, () => ({ cat: 'control', shape: 'cap', parts: [BkP.txt('salir del bucle')] })),
+      R(String.raw`continue`, () => ({ cat: 'control', shape: 'cap', parts: [BkP.txt('pasar a la siguiente vuelta')] })),
+      R(String.raw`throw\s+([\s\S]+)`, (m, I) => ({ cat: 'control', shape: 'cap', parts: [BkP.txt('lanzar el error'), I(1, 'expr')] })),
+      R(String.raw`(await\s+)?([\w$]+)\(([\s\S]*)\)`, (m, I) => ({ cat: 'funcs', parts: [BkP.txt(m[1] ? 'esperar a que termine' : 'ejecutar'), I(2, 'name'), BkP.txt('('), { ...I(3, 'expr'), ph: '' }, BkP.txt(')')] })),
+      R(String.raw`(await\s+)?([\w$][\w$.]*)\.([\w$]+)\(([\s\S]*)\)`, (m, I) => ({ cat: /^(document|window)\b/.test(m[2]) ? 'looks' : /^Math\b/.test(m[2]) ? 'ops' : 'other', parts: [BkP.txt(m[1] ? 'esperar a' : 'ejecutar'), I(2, 'expr'), BkP.txt('.' + m[3] + '('), { ...I(4, 'expr'), ph: '' }, BkP.txt(')')] })),
+    ].filter(Boolean);
+    return this._rules;
+  },
+  /** masked: el texto con los cuerpos de funciones tapados. abs: posición del texto en el archivo. */
+  recognize(masked, text, abs, lists) {
+    for (const r of this.rules()) {
+      const m = r.re.exec(masked);
+      if (!m) continue;
+      const I = (g, kind) => {
+        const ix = m.indices[g];
+        if (!ix) return BkP.inp(kind, abs, abs, '');
+        let [a, b] = ix;
+        while (a < b && /\s/.test(text[a])) a++;
+        while (b > a && /\s/.test(text[b - 1])) b--;
+        return BkP.inp(kind, abs + a, abs + b, text.slice(a, b));
+      };
+      const out = r.make(m, I);
+      if (!out) continue;
+      if (out.body ? lists.length !== 1 : lists.length) continue; // la forma no encaja con las funciones que lleva dentro
+      const parts = out.parts.filter(p => p && !(p.t === 'tag' && !p.v));
+      return { lang: 'js', kind: 'simple', cat: out.cat, shape: out.body ? (out.shape === 'hat' ? 'hat' : 'c') : (out.shape || 'stack'), sections: [{ parts, list: out.body ? lists[0] : undefined }] };
+    }
+    return null;
+  },
+};
+
+/* =====================================================================
+   HTML
+   ===================================================================== */
+const BkHTML = {
+  IMPLIED: { li: ['li'], dt: ['dt', 'dd'], dd: ['dt', 'dd'], option: ['option'], tr: ['tr'], td: ['td', 'th'], th: ['td', 'th'], p: ['p'] },
+  parse(text, base = 0) {
+    const { txt, inp } = BkP;
+    const toks = parseHTML(text);
+    const root = { lang: 'html', kids: [], s: base, e: base + text.length, top: true, ownerPos: base };
+    const stack = [{ list: root, el: null }];
+    const byTok = new Map(), openRaw = [];
+    const finish = (el, closeTok, endPos) => {
+      el.e = base + (closeTok ? closeTok.end : endPos);
+      el.list.e = base + (closeTok ? closeTok.start : endPos);
+      el.closed = !!closeTok;
+      this.decorate(el, text, base);
+    };
+    for (const t of toks) {
+      const top = stack[stack.length - 1];
+      if (t.type === 'text') {
+        const raw = text.slice(t.start, t.end);
+        if (!raw.trim()) continue;
+        const a = t.start + raw.search(/\S/), z = t.start + raw.trimEnd().length;
+        top.list.kids.push({ lang: 'html', kind: 'text', s: base + a, e: base + z, cat: 'htext', shape: 'stack', sections: [{ parts: [txt('texto'), inp('text', base + a, base + z, text.slice(a, z))] }] });
+        continue;
+      }
+      if (t.type === 'comment') {
+        const inner = text.slice(t.start + 4, t.unclosed ? t.end : t.end - 3);
+        top.list.kids.push({ lang: 'html', kind: 'comment', s: base + t.start, e: base + t.end, cat: 'comment', shape: 'note', sections: [{ parts: [inner.includes('\n') ? BkP.code(base + t.start, base + t.end, inner.trim()) : inp('com', base + t.start + 4, base + t.end - (t.unclosed ? 0 : 3), inner.trim(), { html: true })] }] });
+        continue;
+      }
+      if (t.type === 'doctype') {
+        top.list.kids.push({ lang: 'html', kind: 'doctype', s: base + t.start, e: base + t.end, cat: 'hhead', shape: 'stack', sections: [{ parts: [txt('esto es una página HTML'), BkP.tag(t.raw)] }] });
+        continue;
+      }
+      if (t.type === 'raw') {
+        const el = byTok.get(t.parent);
+        if (el) { el.rawTok = t; if (t.parent.noClose) { finish(el, null, text.length); openRaw.splice(openRaw.indexOf(el), 1); } }
+        continue;
+      }
+      if (t.type === 'open') {
+        const imp = this.IMPLIED[t.name];
+        if (imp && top.el && imp.includes(top.el.name) && stack.length > 1) { finish(top.el, null, t.start); stack.pop(); }
+        const el = { lang: 'html', kind: 'el', name: t.name, tok: t, s: base + t.start, e: base + t.end, list: { lang: 'html', kids: [], s: base + t.end, e: base + t.end, ownerPos: base + t.start } };
+        el.list.owner = el;
+        stack[stack.length - 1].list.kids.push(el);
+        byTok.set(t, el);
+        const isVoid = t.selfClose || DICT.void.has(t.name);
+        if (isVoid) { el.void = true; this.decorate(el, text, base); }
+        else if (RAW_TAGS.has(t.name)) { el.rawOpen = true; openRaw.push(el); }
+        else stack.push({ list: el.list, el });
+        continue;
+      }
+      if (t.type === 'close') {
+        // cierre de <script>, <style>, <title> o <textarea>
+        const rawEl = openRaw[openRaw.length - 1];
+        if (rawEl && rawEl.name === t.name) { openRaw.pop(); finish(rawEl, t); continue; }
+        let k = stack.length - 1; while (k > 0 && stack[k].el.name !== t.name) k--;
+        if (k > 0) {
+          while (stack.length - 1 > k) { const x = stack.pop(); finish(x.el, null, t.start); }
+          finish(stack[k].el, t); stack.length = k;
+        }
+      }
+    }
+    for (const el of openRaw) finish(el, null, text.length);
+    while (stack.length > 1) { const x = stack.pop(); const last = x.el.list.kids[x.el.list.kids.length - 1]; finish(x.el, null, last ? last.e - base : x.el.tok.end); }
+    return root;
+  },
+  /** Prepara las filas de un elemento: nombre, atributos y lo que lleva dentro. */
+  decorate(el, text, base) {
+    const { txt, inp } = BkP;
+    const t = el.tok;
+    const [label, cat] = BK_TAGS[t.name] || [t.name.includes('-') ? 'elemento propio' : t.name, 'hstruct'];
+    el.cat = cat;
+    const parts = [txt(label), BkP.tag(`<${t.raw}>`)];
+    const attrs = t.attrs.filter(a => a.name !== 'style' || a.value == null || a.value.length < 60);
+    const order = a => a.name === 'id' ? 0 : a.name === 'class' ? 1 : BK_ATTR[a.name] ? 2 : 3;
+    let shown = 0;
+    for (const a of [...attrs].sort((x, y) => order(x) - order(y))) {
+      if (shown >= 4) { parts.push(BkP.tag(`+${attrs.length - shown}`)); break; }
+      shown++;
+      if (a.value == null) { parts.push(BkP.tag(a.raw)); continue; }
+      const field = inp('attr', base + a.start, base + a.end, a.value, { q: a.quoted || '' });
+      if (a.name === 'id') parts.push(txt('#'), field);
+      else if (a.name === 'class') parts.push(txt('.'), field);
+      else parts.push(txt(BK_ATTR[a.name] || a.raw), field);
+    }
+    const kids = el.list.kids;
+    if (el.void) { el.shape = 'stack'; el.sections = [{ parts }]; return; }
+    // <script> y <style> con código dentro: bloques de JS o de CSS
+    if (el.rawOpen) {
+      const rt = el.rawTok;
+      if (t.name === 'script' && attrOf(t, 'src')) { el.shape = 'stack'; el.sections = [{ parts: [txt('cargar el JavaScript'), ...parts.slice(2)] }]; return; }
+      if (t.name === 'script' || t.name === 'style') {
+        const cs = rt ? rt.start : t.end, ce = rt ? rt.end : t.end;
+        const content = text.slice(cs, ce);
+        let L;
+        if (t.name === 'script' && (!attrOf(t, 'type') || /javascript|module/i.test(attrOf(t, 'type').value || ''))) L = BkJS.parse(content, base + cs, true);
+        else if (t.name === 'style') L = BkCSS.parse(content, base + cs, true);
+        if (L) {
+          L.s = base + cs; L.e = base + ce; L.ownerPos = base + t.start; L.owner = el; L.top = false;
+          el.list = L; el.shape = 'c'; el.sections = [{ parts: [txt(label), ...parts.slice(2)], list: L }];
+          return;
+        }
+      }
+      // <title>, <textarea>…: el texto se escribe en el propio bloque
+      const cs = rt ? rt.start : t.end, ce = rt ? rt.end : t.end;
+      const raw = text.slice(cs, ce);
+      const a = cs + (raw.search(/\S/) < 0 ? 0 : raw.search(/\S/)), z = cs + raw.trimEnd().length;
+      el.shape = 'stack'; el.list = null;
+      el.sections = [{ parts: [...parts, inp('text', base + a, base + Math.max(a, z), text.slice(a, Math.max(a, z)))] }];
+      return;
+    }
+    // un solo texto dentro: se escribe en el propio bloque (como «título [Hola]»)
+    if (kids.length === 1 && kids[0].kind === 'text') {
+      el.shape = 'stack';
+      el.textOnly = true;
+      el.sections = [{ parts: [...parts, kids[0].sections[0].parts[1]] }];
+      return;
+    }
+    el.shape = 'c';
+    el.sections = [{ parts, list: el.list }];
+  },
+};
+
+/* =====================================================================
+   CSS
+   ===================================================================== */
+const BkCSS = {
+  parse(code, base = 0, embedded = false) {
+    const { txt, inp } = BkP;
+    const b = blankOut(code, 'css');
+    const n = code.length;
+    const close = (k, z) => { let d = 0; for (let j = k; j < z; j++) { if (b[j] === '{') d++; else if (b[j] === '}' && --d === 0) return j; } return z; };
+    const trimR = (s, e) => { while (e > s && /\s/.test(code[e - 1])) e--; return e; };
+    const comment = (i, z) => {
+      let e = code.indexOf('*/', i + 2); e = e < 0 || e + 2 > z ? z : e + 2;
+      const inner = code.slice(i + 2, e - 2 >= i + 2 ? e - 2 : e);
+      return { node: { lang: 'css', kind: 'comment', s: base + i, e: base + e, cat: 'comment', shape: 'note', sections: [{ parts: [inner.includes('\n') ? BkP.code(base + i, base + e, inner.trim()) : inp('com', base + i + 2, base + e - 2, inner.trim(), { block: true })] }] }, next: e };
+    };
+    const rule = (i, k, z) => {
+      const c = close(k, z);
+      const he = trimR(i, k), header = code.slice(i, he);
+      const L = { lang: 'css', kids: [], s: base + k + 1, e: base + c, ownerPos: base + i };
+      let parts, cat = 'crule';
+      if (/^@(media|supports|container|layer)\b/i.test(header)) {
+        const at = header.match(/^@[\w-]+/)[0];
+        let q = i + at.length; while (q < he && /\s/.test(code[q])) q++;
+        parts = [txt(at === '@media' ? 'si la pantalla cumple' : at), inp('expr', base + q, base + he, code.slice(q, he))];
+        L.accepts = 'rule'; rules(k + 1, c, L); cat = 'clayout';
+      } else if (/^@(-\w+-)?keyframes\b/i.test(header)) {
+        const m = header.match(/^@[\w-]+\s*/)[0];
+        parts = [txt('animación'), inp('name', base + i + m.length, base + he, header.slice(m.length))];
+        L.accepts = 'rule'; rules(k + 1, c, L); cat = 'ceffect';
+      } else {
+        parts = [txt('para'), inp('sel', base + i, base + he, header)];
+        L.accepts = 'decl'; decls(k + 1, c, L);
+      }
+      const nd = { lang: 'css', kind: 'rule', s: base + i, e: base + Math.min(n, c + 1), cat, shape: 'c', sections: [{ parts, list: L }], open: c >= z || b[c] !== '}' };
+      L.owner = nd;
+      return { node: nd, next: c + 1 };
+    };
+    const raw = (i, e) => {
+      const v = code.slice(i, e).trim();
+      return { lang: 'css', kind: 'raw', s: base + i, e: base + i + code.slice(i, e).trimEnd().length, cat: 'ceffect', shape: 'stack', sections: [{ parts: [v.includes('\n') ? BkP.code(base + i, base + e, v) : inp('code', base + i, base + i + code.slice(i, e).trimEnd().length, v)] }] };
+    };
+    const rules = (i, z, L) => {
+      while (i < z) {
+        while (i < z && /\s/.test(code[i])) i++;
+        if (i >= z) break;
+        if (code.startsWith('/*', i)) { const r = comment(i, z); L.kids.push(r.node); i = r.next; continue; }
+        let k = i; while (k < z && b[k] !== '{' && b[k] !== ';' && b[k] !== '}') k++;
+        if (k >= z) { L.kids.push(raw(i, z)); break; }
+        if (b[k] === '}') { L.kids.push(raw(i, k + 1)); i = k + 1; continue; }
+        if (b[k] === ';') { L.kids.push(raw(i, k + 1)); i = k + 1; continue; }
+        const r = rule(i, k, z); L.kids.push(r.node); i = r.next;
+      }
+    };
+    const decls = (i, z, L) => {
+      while (i < z) {
+        while (i < z && /\s/.test(code[i])) i++;
+        if (i >= z) break;
+        if (code.startsWith('/*', i)) { const r = comment(i, z); L.kids.push(r.node); i = r.next; continue; }
+        let k = i, depth = 0;
+        while (k < z) { const c = b[k]; if (c === '(') depth++; else if (c === ')') depth--; else if (depth <= 0 && (c === ';' || c === '{' || c === '}')) break; k++; }
+        if (k < z && b[k] === '{') { const r = rule(i, k, z); L.kids.push(r.node); i = r.next; continue; }
+        const colon = b.indexOf(':', i);
+        const end = k < z && b[k] === ';' ? k + 1 : trimR(i, k);
+        if (colon < 0 || colon >= k) { L.kids.push(raw(i, end)); i = k < z ? k + 1 : z; continue; }
+        const pe = trimR(i, colon), prop = code.slice(i, pe);
+        let vs = colon + 1; while (vs < k && /\s/.test(code[vs])) vs++;
+        const ve = trimR(vs, k);
+        const label = BK_CSS[prop.toLowerCase()];
+        const parts = [inp('name', base + i, base + pe, prop), txt(':'), inp('expr', base + vs, base + Math.max(vs, ve), code.slice(vs, Math.max(vs, ve)))];
+        if (label) parts.unshift(BkP.tag(label));
+        L.kids.push({ lang: 'css', kind: 'decl', s: base + i, e: base + end, cat: prop.startsWith('--') ? 'cbox' : bkCssCat(prop), shape: 'stack', sections: [{ parts }] });
+        i = k < z ? k + 1 : z;
+      }
+    };
+    const root = { lang: 'css', kids: [], s: base, e: base + n, top: !embedded, ownerPos: base, accepts: 'rule' };
+    rules(0, n, root);
+    return root;
+  },
+};
+
+/* =====================================================================
+   BLOQUES (2/2): LA VISTA DE BLOQUES
+   Otra forma de ver el MISMO archivo, como en Scratch:
+   - Lo que cambias en un bloque se escribe en el código (y al revés).
+   - Arrastra bloques para cambiarlos de sitio, o desde la izquierda
+     para añadir nuevos. Suéltalos en la paleta para borrarlos.
+   - Doble clic en un bloque: te lleva a esa línea del código.
+   ===================================================================== */
+
+/* ---------- Bloques de la paleta (lo que se puede añadir) ---------- */
+const BK_PAL = {
+  js: [
+    ['events', 'cuando la página esté lista', "document.addEventListener('DOMContentLoaded', () => {\n});", 'hat'],
+    ['events', 'cuando se haga clic en [boton]', "document.getElementById('boton').addEventListener('click', () => {\n});", 'hat'],
+    ['events', 'cuando se pulse una tecla', "document.addEventListener('keydown', (e) => {\n  console.log(e.key);\n});", 'hat'],
+    ['control', 'esperar [1000] ms y después', 'setTimeout(() => {\n}, 1000);', 'c'],
+    ['control', 'cada [1000] ms, repetir', 'setInterval(() => {\n}, 1000);', 'c'],
+    ['control', 'si [x > 0] entonces', 'if (x > 0) {\n}', 'c'],
+    ['control', 'si [x > 0] entonces / si no', 'if (x > 0) {\n} else {\n}', 'c2'],
+    ['control', 'repetir [10] veces', 'for (let i = 0; i < 10; i++) {\n}', 'c'],
+    ['control', 'repetir mientras [x < 10]', 'while (x < 10) {\n}', 'c'],
+    ['vars', 'crear la variable [puntos] = [0]', 'let puntos = 0;'],
+    ['vars', 'crear la constante [nombre] = [Ana]', "const nombre = 'Ana';"],
+    ['vars', 'fijar [puntos] a [10]', 'puntos = 10;'],
+    ['vars', 'sumar 1 a [puntos]', 'puntos++;'],
+    ['vars', 'sumar [5] a [puntos]', 'puntos += 5;'],
+    ['looks', 'guardar en [titulo] el elemento con id [titulo]', "const titulo = document.getElementById('titulo');"],
+    ['looks', 'poner el texto de [titulo] a [Hola]', "titulo.textContent = 'Hola';"],
+    ['looks', 'cambiar el estilo [color] de [titulo] a [tomato]', "titulo.style.color = 'tomato';"],
+    ['looks', 'añadir la clase [activo] a [titulo]', "titulo.classList.add('activo');"],
+    ['looks', 'poner o quitar la clase [activo] en [titulo]', "titulo.classList.toggle('activo');"],
+    ['looks', 'ocultar [titulo]', 'titulo.hidden = true;'],
+    ['lists', 'crear la constante [lista] = [[...]]', "const lista = ['uno', 'dos'];"],
+    ['lists', 'añadir [tres] al final de [lista]', "lista.push('tres');"],
+    ['lists', 'para cada [elemento] de [lista]', 'lista.forEach((elemento) => {\n  console.log(elemento);\n});', 'c'],
+    ['funcs', 'definir [saludar] ( [nombre] )', 'function saludar(nombre) {\n}', 'hat'],
+    ['funcs', 'ejecutar [saludar] ( [Ana] )', "saludar('Ana');"],
+    ['funcs', 'devolver [resultado]', 'return resultado;', 'cap'],
+    ['console', 'mostrar en la consola [Hola]', "console.log('Hola');"],
+    ['console', 'mostrar el aviso [Hola]', "alert('Hola');"],
+    ['sensing', 'guardar en el navegador [puntos] = [puntos]', "localStorage.setItem('puntos', puntos);"],
+    ['ops', 'crear [azar] = número al azar de 0 a [9]', 'const azar = Math.floor(Math.random() * 10);'],
+    ['comment', 'nota', '// Escribe aquí una nota', 'note'],
+  ],
+  html: [
+    ['hstruct', 'caja <div>', '<div class="caja">\n</div>', 'c'],
+    ['hstruct', 'sección con título', '<section>\n  <h2>Título</h2>\n</section>', 'c'],
+    ['htext', 'título 1 [Título]', '<h1>Título</h1>'],
+    ['htext', 'título 2 [Subtítulo]', '<h2>Subtítulo</h2>'],
+    ['htext', 'párrafo [Escribe aquí]', '<p>Escribe aquí tu texto.</p>'],
+    ['htext', 'negrita [importante]', '<strong>importante</strong>'],
+    ['hmedia', 'imagen [foto.png]', '<img src="../img/foto.png" alt="Describe la imagen">'],
+    ['hmedia', 'vídeo [video.mp4]', '<video src="video.mp4" controls></video>'],
+    ['hform', 'botón [Pulsa]', '<button id="boton">Pulsa</button>'],
+    ['hform', 'enlace [Más información]', '<a href="https://">Más información</a>'],
+    ['hform', 'campo de texto', '<input type="text" id="nombre" placeholder="Tu nombre">'],
+    ['hform', 'deslizador', '<input type="range" id="nivel" min="0" max="100">'],
+    ['hlist', 'lista con puntos', '<ul>\n  <li>Uno</li>\n  <li>Dos</li>\n  <li>Tres</li>\n</ul>', 'c'],
+    ['hlist', 'elemento de la lista [Elemento]', '<li>Elemento</li>'],
+    ['hcode', 'cargar el JavaScript [app.js]', '<script src="../js/app.js"><\/script>'],
+    ['hcode', 'enlazar el CSS [estilos.css]', '<link rel="stylesheet" href="../css/estilos.css">'],
+    ['comment', 'nota', '<\!-- Escribe aquí una nota -->', 'note'],
+  ],
+  css: [
+    ['crule', 'para [.caja]', '.caja {\n}', 'c', 'rule'],
+    ['crule', 'para [h1]', 'h1 {\n}', 'c', 'rule'],
+    ['crule', 'para [#titulo]', '#titulo {\n}', 'c', 'rule'],
+    ['crule', 'para [.boton:hover] (ratón encima)', '.boton:hover {\n}', 'c', 'rule'],
+    ['clayout', 'si la pantalla cumple [max-width: 600px]', '@media (max-width: 600px) {\n}', 'c', 'rule'],
+    ['ctext', 'tamaño de letra [20px]', 'font-size: 20px;', '', 'decl'],
+    ['ctext', 'tipo de letra [system-ui]', 'font-family: system-ui, sans-serif;', '', 'decl'],
+    ['ctext', 'grosor de letra [bold]', 'font-weight: bold;', '', 'decl'],
+    ['ctext', 'alinear el texto [center]', 'text-align: center;', '', 'decl'],
+    ['ccolor', 'color del texto [tomato]', 'color: tomato;', '', 'decl'],
+    ['ccolor', 'fondo [#0b1220]', 'background: #0b1220;', '', 'decl'],
+    ['ccolor', 'fondo degradado', 'background: linear-gradient(135deg, #34e27a, #5ee7ff);', '', 'decl'],
+    ['cbox', 'ancho [100%]', 'width: 100%;', '', 'decl'],
+    ['cbox', 'relleno (dentro) [16px]', 'padding: 16px;', '', 'decl'],
+    ['cbox', 'margen (fuera) [0 auto]', 'margin: 0 auto;', '', 'decl'],
+    ['cbox', 'borde [2px solid]', 'border: 2px solid #34e27a;', '', 'decl'],
+    ['cbox', 'esquinas redondeadas [12px]', 'border-radius: 12px;', '', 'decl'],
+    ['clayout', 'cómo se coloca [flex]', 'display: flex;', '', 'decl'],
+    ['clayout', 'centrar en horizontal', 'justify-content: center;', '', 'decl'],
+    ['clayout', 'centrar en vertical', 'align-items: center;', '', 'decl'],
+    ['clayout', 'separación [12px]', 'gap: 12px;', '', 'decl'],
+    ['ceffect', 'sombra', 'box-shadow: 0 8px 24px rgb(0 0 0 / .3);', '', 'decl'],
+    ['ceffect', 'cambio suave [0.2s]', 'transition: transform .2s;', '', 'decl'],
+    ['ceffect', 'agrandar [1.05]', 'transform: scale(1.05);', '', 'decl'],
+    ['ceffect', 'puntero de mano', 'cursor: pointer;', '', 'decl'],
+    ['comment', 'nota', '/* Escribe aquí una nota */', 'note', 'any'],
+  ],
+};
+
+const Blocks = {
+  on: false, path: null, lang: null, text: '',
+  nodes: [], lists: [], inputs: [], sel: -1, undo: [], zoom: 1, palLang: 'js', root: null,
+
+  init() {
+    this.view = $('#blocksView'); this.ws = $('#bkWs'); this.pal = $('#bkPal');
+    this.zoom = Prefs.get('blocksZoom') || 1;
+    $('#btnBlocks').addEventListener('click', () => this.toggle());
+    $('#bkCode').addEventListener('click', () => this.toggle(false));
+    $('#bkUndo').addEventListener('click', () => this.undoLast());
+    $('#bkDup').addEventListener('click', () => { if (this.sel >= 0) this.duplicate(this.nodes[this.sel]); });
+    $('#bkDel').addEventListener('click', () => { if (this.sel >= 0) this.remove(this.nodes[this.sel]); });
+    $('#bkGoto').addEventListener('click', () => { if (this.sel >= 0) this.gotoCode(this.nodes[this.sel]); });
+    $('#bkZoomIn').addEventListener('click', () => this.setZoom(this.zoom + 0.1));
+    $('#bkZoomOut').addEventListener('click', () => this.setZoom(this.zoom - 0.1));
+    this.soon = debounce(() => { if (this.on) this.render(); }, 160);
+    Bus.on('editor-open', () => { if (this.on) { this.sel = -1; this.render(true); } });
+    Bus.on('file-changed', ({ path, source }) => { if (this.on && path === this.path && source !== 'blocks') this.soon(); });
+    Bus.on('renamed', () => { if (this.on) this.soon(); });
+    Bus.on('problems', () => { if (this.on) this.markProblems(); });
+    Bus.on('pref', ({ k }) => { if (k === 'theme' && this.on) this.renderPalette(true); });
+    this.bindWorkspace();
+    this.bindDrag();
+    if (Prefs.get('blocks')) this.toggle(true);
+  },
+
+  /* ---------- encender / apagar ---------- */
+  toggle(force) {
+    const on = force ?? !this.on;
+    this.on = on;
+    Prefs.set('blocks', on);
+    $('#editor').classList.toggle('blocks-on', on);
+    const b = $('#btnBlocks'); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
+    b.title = on ? 'Volver a ver el código' : 'Ver el código como bloques (como Scratch)';
+    if (on) {
+      AC.hide();
+      if (Find.active) Find.hide();
+      this.sel = -1;
+      this.render(true);
+    } else {
+      this.view.hidden = true;
+      Editor.layout();
+      if (Editor.cur && !isMobile()) Editor.cur.ta.focus({ preventScroll: true });
+    }
+  },
+  setZoom(z) {
+    this.zoom = clamp(Math.round(z * 10) / 10, 0.7, 1.6);
+    Prefs.set('blocksZoom', this.zoom);
+    this.ws.style.fontSize = (13 * this.zoom) + 'px';
+  },
+
+  /* ---------- leer el archivo y dibujar ---------- */
+  render(resetScroll = false) {
+    const d = Editor.cur, path = Editor.path;
+    if (!d) { this.view.hidden = true; return; }
+    this.view.hidden = false;
+    this.ws.style.fontSize = (13 * this.zoom) + 'px';
+    const lang = edLang(path);
+    this.path = path; this.lang = lang;
+    this.ro = Project.isReadonly(path);
+    this.view.classList.toggle('ro', this.ro);
+    if (!['js', 'html', 'css'].includes(lang)) {
+      this.root = null; this.nodes = []; this.lists = []; this.inputs = [];
+      this.ws.innerHTML = `<div class="bk-msg">${icon('layers', 'big')}<h3>Este archivo no tiene bloques</h3><p>Los bloques funcionan con archivos HTML, CSS y JavaScript.</p><button class="btn" data-act="code">Ver el código</button></div>`;
+      this.pal.innerHTML = '';
+      this.updateTools();
+      return;
+    }
+    const text = Project.read(path) ?? '';
+    this.text = text;
+    const scroll = resetScroll ? 0 : this.ws.scrollTop;
+    let root;
+    try {
+      root = lang === 'js' ? BkJS.parse(text) : lang === 'css' ? BkCSS.parse(text) : BkHTML.parse(text);
+    } catch (e) {
+      console.error('bloques', e);
+      this.ws.innerHTML = `<div class="bk-msg"><h3>No se han podido leer los bloques</h3><p>${esc(e.message)}</p><button class="btn" data-act="code">Ver el código</button></div>`;
+      return;
+    }
+    this.root = root;
+    this.nodes = []; this.lists = []; this.inputs = [];
+    const big = text.length > 120000;
+    const body = this.renderList(root, true);
+    this.ws.innerHTML = `<div class="bk-canvas${big ? ' big' : ''}">${body}${root.kids.length ? '' : `<div class="bk-empty">${this.ro ? 'Este archivo está vacío.' : 'Arrastra aquí bloques desde la izquierda (o tócalos) para empezar.'}</div>`}</div>`;
+    this.ws.scrollTop = scroll;
+    if (this.selAt != null) {
+      const i = this.nodes.findIndex(n => n.s === this.selAt);
+      this.selAt = null;
+      this.select(i, true);
+    } else if (this.sel >= this.nodes.length) this.sel = -1;
+    else if (this.sel >= 0) this.select(this.sel, false);
+    if (lang !== 'html') this.palLang = lang;
+    else if (!['html', 'css', 'js'].includes(this.palLang) || this._palFile !== path) this.palLang = 'html';
+    this._palFile = path;
+    this.renderPalette();
+    this.markProblems();
+    this.updateTools();
+  },
+  renderList(L, top = false) {
+    const li = this.lists.push(L) - 1;
+    L.kids.forEach((k, i) => { k.parent = L; k.idx = i; });
+    return `<div class="blk-list${top ? ' top' : ''}${L.locked ? ' locked' : ''}" data-l="${li}">${L.kids.map(k => this.renderNode(k)).join('')}</div>`;
+  },
+  renderNode(nd) {
+    const ni = this.nodes.push(nd) - 1;
+    const [, color] = BK_CAT[nd.cat] || BK_CAT.other;
+    let html = '';
+    nd.sections.forEach((sec, i) => {
+      html += `<div class="blk-row${i ? ' mid' : ''}">${sec.parts.map(p => this.renderPart(p)).join('')}</div>`;
+      if (sec.list) html += `<div class="blk-slot">${this.renderList(sec.list)}</div>`;
+    });
+    if (nd.shape === 'c' || nd.shape === 'hat' && nd.sections.some(x => x.list)) html += '<div class="blk-foot"></div>';
+    return `<div class="blk ${nd.shape}${nd.cat === 'comment' ? ' note' : ''}" style="--c:${color}" data-n="${ni}">${html}</div>`;
+  },
+  renderPart(p) {
+    if (p.t === 'txt') return `<span class="bt">${esc(p.v)}</span>`;
+    if (p.t === 'tag') return `<small class="tg">${esc(p.v)}</small>`;
+    if (p.t === 'code') { const v = p.v.length > 160 ? p.v.slice(0, 160) + '…' : p.v; return `<code class="bc" title="${esc(p.v.slice(0, 600))}">${esc(v)}</code>`; }
+    const ii = this.inputs.push(p) - 1;
+    const shown = p.v.replace(/\s*\n\s*/g, ' ');
+    const w = clamp(shown.length + 1, 2, p.k === 'com' || p.k === 'text' ? 64 : 38);
+    const q = p.k === 'str' ? `<span class="q">${p.q === '`' ? '`' : '«'}</span>` : '';
+    const q2 = p.k === 'str' ? `<span class="q">${p.q === '`' ? '`' : '»'}</span>` : '';
+    return `${q}<input class="in k-${p.k}" data-i="${ii}" value="${esc(shown)}" style="width:calc(${w}ch + 1.3em)" spellcheck="false" autocomplete="off" aria-label="Valor"${p.ph != null ? ` placeholder="${esc(p.ph)}"` : ''}${this.ro ? ' readonly' : ''}>${q2}`;
+  },
+
+  /* ---------- paleta ---------- */
+  renderPalette(force = false) {
+    if (this.ro || !this.root) { this.pal.innerHTML = ''; this._palKey = ''; return; }
+    const lang = this.palLang;
+    // si ya está la misma paleta no se vuelve a dibujar (así no pierde por dónde ibas)
+    const key = lang + '|' + this.lang + '|' + document.documentElement.dataset.theme;
+    if (!force && key === this._palKey && this.pal.firstChild) return;
+    this._palKey = key;
+    const items = BK_PAL[lang];
+    const cats = [...new Set(items.map(x => x[0]))];
+    const tabs = this.lang === 'html' ? `<div class="bk-langs" role="tablist">${['html', 'css', 'js'].map(l => `<button data-pl="${l}" class="${l === lang ? 'on' : ''}" role="tab" aria-selected="${l === lang}">${l.toUpperCase()}</button>`).join('')}</div>` : '';
+    const chips = `<div class="bk-cats">${cats.map(c => `<button data-cat="${c}" style="--c:${BK_CAT[c][1]}"><i></i>${BK_CAT[c][0]}</button>`).join('')}</div>`;
+    let list = '', last = null;
+    items.forEach(([cat, label, code, shape], i) => {
+      if (cat !== last) { list += `<div class="bk-sec" data-sec="${cat}">${BK_CAT[cat][0]}</div>`; last = cat; }
+      const lab = esc(label).replace(/\[([^\]]*)\]/g, '<span class="in fake">$1</span>');
+      const c = shape === 'c' || shape === 'c2' || (shape === 'hat' && /\n\}/.test(code));
+      const foot = c ? (shape === 'c2' ? '<div class="blk-slot"><div class="blk-list"></div></div><div class="blk-row mid"><span class="bt">si no</span></div><div class="blk-slot"><div class="blk-list"></div></div><div class="blk-foot"></div>' : '<div class="blk-slot"><div class="blk-list"></div></div><div class="blk-foot"></div>') : '';
+      list += `<div class="blk pal-blk ${shape === 'hat' ? 'hat' : shape === 'cap' ? 'cap' : shape === 'note' ? 'stack note' : c ? 'c' : 'stack'}" style="--c:${BK_CAT[cat][1]}" data-p="${i}" title="Arrastra o toca para añadir · ${esc(code.split('\n')[0])}"><div class="blk-row">${lab.split(/(<span class="in fake">[^<]*<\/span>)/).map(x => x.startsWith('<span') ? x : x.trim() ? `<span class="bt">${x.trim()}</span>` : '').join('')}</div>${foot}</div>`;
+    });
+    this.pal.innerHTML = `${tabs}${chips}<div class="bk-items scroll">${list}<p class="bk-tip">Arrastra un bloque hasta su sitio, o tócalo para añadirlo debajo del que tengas elegido. Para borrar un bloque, arrástralo aquí.</p></div>`;
+  },
+  palItem(i) {
+    const [cat, label, code, shape, fits] = BK_PAL[this.palLang][i];
+    return { lang: this.palLang, cat, label, code, shape, fits: fits || (this.palLang === 'css' ? 'rule' : undefined) };
+  },
+
+  /* ---------- selección ---------- */
+  select(i, scroll) {
+    $$('.blk.sel', this.ws).forEach(e => e.classList.remove('sel'));
+    this.sel = i;
+    const nd = this.nodes[i];
+    if (nd) {
+      const el = this.ws.querySelector(`.blk[data-n="${i}"]`);
+      if (el) { el.classList.add('sel'); if (scroll) el.scrollIntoView({ block: 'nearest' }); }
+      // el cursor del código se pone en el bloque: así «Explicar», «Comentar»… funcionan con él
+      const ta = Editor.cur && Editor.cur.ta;
+      if (ta && Editor.path === this.path) { try { ta.setSelectionRange(nd.s, nd.s); Editor.updateCaret(); } catch (e) {} }
+      // en un HTML, la paleta cambia a JS o CSS si el bloque está dentro de un <script> o <style>
+      if (this.lang === 'html') { const l = this.ctxLang(nd); if (l !== this.palLang) { this.palLang = l; this.renderPalette(); } }
+    }
+    this.updateTools();
+  },
+  ctxLang(nd) { return nd.lang === 'html' && nd.kind === 'el' && nd.list && nd.list.lang !== 'html' ? nd.list.lang : nd.lang; },
+  updateTools() {
+    const has = this.sel >= 0 && !!this.nodes[this.sel] && !this.ro;
+    $('#bkDup').disabled = !has; $('#bkDel').disabled = !has; $('#bkGoto').disabled = !(this.sel >= 0);
+    $('#bkUndo').disabled = !this.undo.some(u => u.path === this.path);
+  },
+
+  /* ---------- errores del corrector sobre los bloques ---------- */
+  markProblems() {
+    if (!this.root) return;
+    $$('.blk.err, .blk.warn', this.ws).forEach(e => { e.classList.remove('err', 'warn'); const r = e.querySelector(':scope > .blk-row'); if (r) r.removeAttribute('data-msg'); });
+    if (Project.read(this.path) !== this.text) return;
+    for (const p of Analyzer.problems) {
+      if (p.path !== this.path || p.from == null || p.level === 'info') continue;
+      let best = -1, size = Infinity;
+      this.nodes.forEach((nd, i) => { if (nd.s <= p.from && p.from < Math.max(nd.e, nd.s + 1) && nd.e - nd.s < size) { best = i; size = nd.e - nd.s; } });
+      if (best < 0) continue;
+      const el = this.ws.querySelector(`.blk[data-n="${best}"]`);
+      if (!el) continue;
+      if (p.level === 'error') el.classList.add('err'); else if (!el.classList.contains('err')) el.classList.add('warn');
+      const row = el.querySelector(':scope > .blk-row');
+      if (row) row.dataset.msg = (row.dataset.msg ? row.dataset.msg + '\n' : '') + p.msg;
+    }
+  },
+
+  /* ---------- cambiar el archivo ---------- */
+  /**
+   * Aplica un cambio al archivo (guardando cómo estaba para «Deshacer»).
+   * fn recibe el texto y devuelve { text, sel } (sel: dónde empieza el bloque que hay que elegir).
+   */
+  apply(fn) {
+    const cur = Project.read(this.path);
+    if (cur == null || this.ro) return false;
+    if (cur !== this.text) { this.render(); UI.toast({ title: 'El código acaba de cambiar', msg: 'Vuelve a intentarlo.', tone: 'warn', ms: 2200 }); return false; }
+    const r = fn(cur);
+    const next = r == null ? null : typeof r === 'string' ? r : r.text;
+    if (next == null || next === cur) return false;
+    this.undo.push({ path: this.path, text: cur });
+    if (this.undo.length > 80) this.undo.shift();
+    Project.write(this.path, next, { source: 'blocks', msg: `Editado con bloques: ${this.path}` });
+    this.selAt = r && r.sel != null ? r.sel : null;
+    if (this.selAt == null) this.sel = -1;
+    this.render();
+    return true;
+  },
+  undoLast() {
+    for (let i = this.undo.length - 1; i >= 0; i--) {
+      if (this.undo[i].path !== this.path) continue;
+      const [u] = this.undo.splice(i, 1);
+      Project.write(this.path, u.text, { source: 'blocks', msg: `Deshecho en bloques: ${this.path}` });
+      this.sel = -1;
+      this.render();
+      return;
+    }
+    UI.toast({ title: 'No hay nada que deshacer', ms: 1500 });
+  },
+  commitInput(el) {
+    const p = this.inputs[+el.dataset.i]; if (!p || this.ro) return;
+    let v = el.value;
+    if (v === p.v.replace(/\s*\n\s*/g, ' ')) return;
+    let rep = v;
+    if (p.k === 'str') {
+      // si escribes la misma comilla que la del texto, se le pone \ delante
+      let out = ''; for (let i = 0; i < v.length; i++) { const c = v[i]; if (c === '\\') { out += c + (v[i + 1] ?? ''); i++; } else if (c === p.q) out += '\\' + c; else out += c; }
+      rep = out;
+    } else if (p.k === 'attr') {
+      if (p.q === '"') rep = v.replace(/"/g, '&quot;');
+      else if (p.q === "'") rep = v.replace(/'/g, '&#39;');
+      else if (!v || /[\s"'=<>`]/.test(v)) rep = '"' + v.replace(/"/g, '&quot;') + '"';
+    } else if (p.k === 'com') {
+      rep = p.html ? ' ' + v.trim().replace(/--/g, '- -') + ' ' : p.block ? ' ' + v.trim().replace(/\*\//g, '* /') + ' ' : ' ' + v.trim().replace(/\n/g, ' ');
+    } else if ((p.k === 'name' || p.k === 'sel') && !v.trim()) { el.value = p.v; return; }
+    this.apply(t => t.slice(0, p.s) + rep + t.slice(p.e));
+  },
+
+  /* ---------- sangrías ---------- */
+  ls(t, pos) { return t.lastIndexOf('\n', pos - 1) + 1; },
+  le(t, pos) { const i = t.indexOf('\n', pos); return i < 0 ? t.length : i; },
+  indentAt(t, pos) { const s = this.ls(t, pos); return /^[ \t]*/.exec(t.slice(s, pos + 400))[0]; },
+  onlyWS(s) { return /^[ \t]*$/.test(s); },
+  /** Cambia la sangría de un trozo de código (la primera línea no la lleva). */
+  reindent(code, from, to) {
+    return code.split('\n').map((l, i) => {
+      if (i === 0) return l;
+      if (!l.trim()) return '';
+      return to + (l.startsWith(from) ? l.slice(from.length) : l.replace(/^[ \t]*/, ''));
+    }).join('\n');
+  },
+  /** Trozo que ocupa un bloque (líneas enteras si está solo en sus líneas). */
+  range(t, nd) {
+    const s = this.ls(t, nd.s);
+    if (this.onlyWS(t.slice(s, nd.s))) {
+      const e = this.le(t, nd.e);
+      if (this.onlyWS(t.slice(nd.e, e))) return [s, Math.min(t.length, e + 1)];
+    }
+    let e = nd.e; while (t[e] === ' ') e++;
+    return [nd.s, e];
+  },
+  /** Código de un bloque, con la sangría quitada. */
+  snippet(t, nd) {
+    let s = this.reindent(t.slice(nd.s, nd.e), this.indentAt(t, nd.s), '');
+    if (nd.kind === 'decl' && !/;\s*$/.test(s)) s = s.trimEnd() + ';'; // en CSS cada propiedad acaba en ;
+    return s;
+  },
+  needsSemi(t, k) { return k && k.lang === 'css' && k.kind === 'decl' && !/;\s*$/.test(t.slice(k.s, k.e)); },
+  /** Dónde y qué escribir para meter `snip` en la posición `index` de la lista L. */
+  insertion(t, L, index, snip) {
+    const unit = Editor.unit();
+    const kids = L.kids;
+    // detrás de un bloque sin cerrar no se puede poner nada (quedaría dentro de él)
+    const open = kids.findIndex(k => k.open);
+    if (open >= 0 && index > open) index = open;
+    if (index < kids.length) {
+      const k = kids[index], s = this.ls(t, k.s);
+      if (this.onlyWS(t.slice(s, k.s))) { const ind = t.slice(s, k.s); return { at: s, to: s, ins: ind + this.reindent(snip, '', ind) + '\n', sel: s + ind.length }; }
+      // el bloque de al lado está en mitad de una línea: el nuevo va en su propia línea
+      const ind = this.indentAt(t, k.s);
+      return { at: k.s, to: k.s, ins: this.reindent(snip, '', ind) + '\n' + ind, sel: k.s };
+    }
+    if (kids.length) {
+      const k = kids[kids.length - 1], ind = this.indentAt(t, k.s), e = this.le(t, k.e);
+      const semi = this.needsSemi(t, k) ? ';' : '';
+      if (this.onlyWS(t.slice(k.e, e))) return { at: k.e, to: e, ins: semi + '\n' + ind + this.reindent(snip, '', ind), sel: k.e + semi.length + 1 + ind.length };
+      // detrás hay más código en la misma línea (p. ej. «} else {»): el nuevo bloque va en su propia línea
+      return { at: k.e, to: k.e, ins: semi + '\n' + ind + this.reindent(snip, '', ind) + '\n' + ind, sel: k.e + semi.length + 1 + ind.length };
+    }
+    if (L.top) {
+      const pre = L.e > 0 && t[L.e - 1] !== '\n' ? '\n' : '';
+      const mid = t.slice(L.s, L.e);
+      if (!mid.trim()) return { at: L.s, to: L.e, ins: snip + '\n', sel: L.s };
+      return { at: L.e, to: L.e, ins: pre + snip + '\n', sel: L.e + pre.length };
+    }
+    const own = this.indentAt(t, L.ownerPos ?? L.s), ind = own + unit;
+    const mid = t.slice(L.s, L.e);
+    if (!mid.trim()) return { at: L.s, to: L.e, ins: '\n' + ind + this.reindent(snip, '', ind) + '\n' + own, sel: L.s + 1 + ind.length };
+    return { at: L.e, to: L.e, ins: this.reindent(snip, '', ind), sel: L.e };
+  },
+  canDrop(L, item) {
+    if (!L || L.locked || L.broken || this.ro) return false;
+    if (L.lang !== item.lang) return false;
+    if (L.accepts === 'member' || item.fits === 'member') return L.accepts === item.fits; // los métodos solo dentro de su clase
+    if (item.lang === 'css' && item.fits !== 'any') return (L.accepts || 'rule') === (item.fits || 'rule');
+    return true;
+  },
+  fitsOf(nd) { return nd.member ? 'member' : nd.kind === 'decl' ? 'decl' : nd.kind === 'comment' ? 'any' : 'rule'; },
+  /** Bloques que no se pueden mover (están sin cerrar: primero hay que arreglar el código). */
+  stuck(nd) {
+    if (!nd.open) return false;
+    UI.toast({ title: 'Este bloque no está cerrado', msg: 'Le falta una llave } o el cierre de la etiqueta. Arréglalo en el código (el corrector te ayuda).', tone: 'warn', ms: 3200 });
+    return true;
+  },
+  /* Operaciones «puras»: reciben el texto y devuelven el texto nuevo (así se pueden probar solas). */
+  moveText(t, nd, L, index) {
+    if (L === nd.parent && (index === nd.idx || index === nd.idx + 1)) return null;
+    const [rs, re] = this.range(t, nd);
+    const r = this.insertion(t, L, index, this.snippet(t, nd));
+    if (r.at > rs && r.at < re) return null;
+    if (r.at >= re) return { text: t.slice(0, rs) + t.slice(re, r.at) + r.ins + t.slice(r.to), sel: r.sel - (re - rs) };
+    return { text: t.slice(0, r.at) + r.ins + t.slice(r.to, rs) + t.slice(re), sel: r.sel };
+  },
+  insertText(t, L, index, code) {
+    const unit = Editor.unit();
+    const r = this.insertion(t, L, index, code.replace(/^( {2})+/gm, m => unit.repeat(m.length / 2)));
+    return { text: t.slice(0, r.at) + r.ins + t.slice(r.to), sel: r.sel };
+  },
+  removeText(t, nd) { const [s, e] = this.range(t, nd); return { text: t.slice(0, s) + t.slice(e) }; },
+  dupText(t, nd) { const r = this.insertion(t, nd.parent, nd.idx + 1, this.snippet(t, nd)); return { text: t.slice(0, r.at) + r.ins + t.slice(r.to), sel: r.sel }; },
+  /** Saca el bloque de su sitio y lo pone en la lista L, posición index. */
+  move(nd, L, index) {
+    if (this.stuck(nd) || !this.canDrop(L, { lang: nd.lang, fits: this.fitsOf(nd) })) return;
+    this.apply(t => this.moveText(t, nd, L, index));
+  },
+  insertCode(item, L, index) { if (L) this.apply(t => this.insertText(t, L, index, item.code)); },
+  remove(nd) { if (!this.stuck(nd)) this.apply(t => this.removeText(t, nd)); },
+  duplicate(nd) { if (nd.parent && !this.stuck(nd)) this.apply(t => this.dupText(t, nd)); },
+  gotoCode(nd) {
+    this.toggle(false);
+    requestAnimationFrame(() => { Editor.gotoIndex(nd.s, nd.s); });
+  },
+  /** Al tocar un bloque de la paleta: se añade debajo del bloque elegido (o en el mejor sitio). */
+  addFromPalette(i) {
+    const item = this.palItem(i);
+    const t = this.find(item);
+    if (t) return this.insertCode(item, t.list, t.index);
+    if (item.lang === 'js' && this.lang === 'html') {
+      // no hay ningún <script>: se crea uno al final del <body>
+      const body = this.lists.find(L => L.owner && L.owner.name === 'body') || this.root;
+      const unit = Editor.unit();
+      return this.insertCode({ ...item, code: '<script>\n' + item.code.split('\n').map(l => unit + l).join('\n') + '\n<\/script>' }, body, body.kids.length);
+    }
+    if (item.lang === 'css' && item.fits === 'decl') UI.toast({ title: 'Primero añade una regla', msg: 'Las propiedades van dentro de una regla «para …».', tone: 'warn', ms: 2600 });
+    else if (item.lang === 'css' && this.lang === 'html') UI.toast({ title: 'No hay ningún bloque de estilos', msg: 'Añade el CSS en tu archivo .css (o un <style> en la cabeza).', tone: 'warn', ms: 2600 });
+  },
+  find(item) {
+    const nd = this.nodes[this.sel];
+    if (nd) {
+      // dentro del bloque elegido: una etiqueta HTML, una regla CSS (para propiedades) o un @media (para reglas)
+      const inner = nd.sections.map(x => x.list).find(L => L && this.canDrop(L, item));
+      if (inner && (nd.kind === 'el' || nd.kind === 'rule')) return { list: inner, index: inner.kids.length };
+      // debajo del bloque elegido
+      let x = nd;
+      while (x) { if (x.parent && this.canDrop(x.parent, item)) return { list: x.parent, index: x.idx + 1 }; x = x.parent && x.parent.owner; }
+    }
+    // el mejor sitio según el tipo de archivo
+    const ok = this.lists.filter(L => this.canDrop(L, item));
+    if (!ok.length) return null;
+    if (item.lang === 'html') { const body = ok.find(L => L.owner && L.owner.name === 'body'); if (body) return { list: body, index: body.kids.length }; }
+    const L = item.fits === 'decl' || item.lang !== this.lang ? ok[ok.length - 1] : (ok.find(L => L.top) || ok[0]);
+    return { list: L, index: L.kids.length };
+  },
+
+  /* ---------- ratón, dedo y teclado ---------- */
+  bindWorkspace() {
+    const ws = this.ws;
+    ws.addEventListener('click', e => {
+      if (e.target.closest('[data-act="code"]')) { this.toggle(false); return; }
+      const b = e.target.closest('.blk');
+      if (this._dragged) { this._dragged = false; return; }
+      if (b && !e.target.closest('input')) this.select(+b.dataset.n, false);
+      else if (!b) this.select(-1);
+    });
+    ws.addEventListener('dblclick', e => {
+      const b = e.target.closest('.blk'); if (!b || e.target.closest('input')) return;
+      this.gotoCode(this.nodes[+b.dataset.n]);
+    });
+    ws.addEventListener('change', e => { if (e.target.matches('input.in')) this.commitInput(e.target); });
+    ws.addEventListener('input', e => { if (e.target.matches('input.in')) e.target.style.width = `calc(${clamp(e.target.value.length + 1, 2, /k-(com|text)/.test(e.target.className) ? 64 : 38)}ch + 1.3em)`; });
+    ws.addEventListener('keydown', e => {
+      if (e.target.matches('input.in')) {
+        if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+        if (e.key === 'Escape') { const p = this.inputs[+e.target.dataset.i]; e.target.value = p ? p.v.replace(/\s*\n\s*/g, ' ') : e.target.value; e.target.blur(); }
+        return;
+      }
+      const mod = e.ctrlKey || e.metaKey;
+      const nd = this.nodes[this.sel];
+      if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); this.undoLast(); }
+      else if (nd && (e.key === 'Delete' || e.key === 'Backspace')) { e.preventDefault(); this.remove(nd); }
+      else if (nd && mod && e.key.toLowerCase() === 'd') { e.preventDefault(); this.duplicate(nd); }
+      else if (nd && e.key === 'Enter') { e.preventDefault(); this.gotoCode(nd); }
+      else if (e.key === 'Escape') this.select(-1);
+    });
+    ws.addEventListener('contextmenu', e => {
+      const b = e.target.closest('.blk'); if (!b || e.target.closest('input')) return;
+      e.preventDefault();
+      if (this._touchDrag) return;
+      const i = +b.dataset.n; this.select(i, false);
+      const nd = this.nodes[i];
+      UI.ctx([
+        { label: 'Ver en el código', icon: 'code', fn: () => this.gotoCode(nd) },
+        { label: 'Explicar este bloque', icon: 'book', fn: () => this.explain(nd) },
+        '-',
+        { label: 'Duplicar', icon: 'copy', fn: () => this.duplicate(nd), disabled: this.ro },
+        { label: 'Borrar', icon: 'trash', danger: true, fn: () => this.remove(nd), disabled: this.ro },
+      ], e.clientX, e.clientY);
+    });
+    // explicación al pasar el ratón (se calcula solo cuando hace falta)
+    ws.addEventListener('pointerover', e => {
+      const row = e.target.closest('.blk-row'); if (!row || row.title) return;
+      const b = row.closest('.blk'); const nd = this.nodes[+b.dataset.n]; if (!nd) return;
+      const msg = row.dataset.msg ? '⚠ ' + row.dataset.msg + '\n\n' : '';
+      row.title = msg + this.explainText(nd) + '\n(doble clic: ver en el código)';
+    });
+    this.pal.addEventListener('click', e => {
+      const t = e.target.closest('[data-pl]'); if (t) { this.palLang = t.dataset.pl; this.renderPalette(); return; }
+      const c = e.target.closest('[data-cat]');
+      if (c) { const sec = this.pal.querySelector(`[data-sec="${c.dataset.cat}"]`); if (sec) sec.parentElement.scrollTo({ top: sec.offsetTop - sec.parentElement.offsetTop, left: sec.offsetLeft - sec.parentElement.offsetLeft, behavior: reducedMotion() ? 'auto' : 'smooth' }); return; }
+      const p = e.target.closest('.pal-blk');
+      if (p && !this._dragged) { this.addFromPalette(+p.dataset.p); this.ws.focus({ preventScroll: true }); }
+      this._dragged = false;
+    });
+  },
+  explainText(nd) {
+    const t = this.text;
+    const line = t.slice(this.ls(t, nd.s), this.le(t, nd.s));
+    const ex = Explain.line(line, nd.lang);
+    return ex.summary || 'Bloque de código.';
+  },
+  explain(nd) {
+    UI.toast({ title: 'Qué hace este bloque', msg: this.explainText(nd), ms: 6000 });
+  },
+
+  /* ---------- arrastrar y soltar ---------- */
+  bindDrag() {
+    const view = this.view;
+    let st = null;
+    const start = (e, src) => {
+      const r = src.el.getBoundingClientRect();
+      const g = src.el.cloneNode(true);
+      g.classList.add('blk-ghost'); g.classList.remove('sel');
+      g.style.width = Math.min(r.width, 420) + 'px';
+      g.style.fontSize = getComputedStyle(this.ws).fontSize;
+      document.body.appendChild(g);
+      st.ghost = g; st.dx = e.clientX - r.left; st.dy = e.clientY - r.top;
+      if (src.node) src.el.classList.add('dragging');
+      st.mark = document.createElement('div'); st.mark.className = 'blk-mark'; document.body.appendChild(st.mark);
+      document.body.classList.add('bk-dragging');
+      st.active = true;
+      moveTo(e);
+    };
+    const target = (x, y) => {
+      st.ghost.style.display = 'none'; st.mark.style.display = 'none';
+      const el = document.elementFromPoint(x, y);
+      st.ghost.style.display = ''; st.mark.style.display = '';
+      if (!el) return null;
+      if (st.src.node && el.closest('#bkPal')) return { trash: true };
+      if (!el.closest('#bkWs')) return null;
+      let listEl = el.closest('.blk-list[data-l]');
+      // encima de un bloque «de una línea» que no lleva nada dentro → se suelta en su lista
+      if (!listEl) listEl = this.ws.querySelector('.blk-list.top');
+      while (listEl) {
+        const L = this.lists[+listEl.dataset.l];
+        const ok = L && this.canDrop(L, st.item) && !(st.src.el && st.src.node && st.src.el.contains(listEl));
+        if (ok) {
+          const kids = [...listEl.children].filter(c => c.classList.contains('blk'));
+          let index = kids.length;
+          for (let i = 0; i < kids.length; i++) { const r = kids[i].getBoundingClientRect(); if (y < r.top + Math.min(r.height / 2, 18)) { index = i; break; } }
+          const lr = listEl.getBoundingClientRect();
+          let my;
+          if (index < kids.length) my = kids[index].getBoundingClientRect().top - 2;
+          else if (kids.length) my = kids[kids.length - 1].getBoundingClientRect().bottom + 1;
+          else my = lr.top + 2;
+          return { L, index, x: lr.left, y: my };
+        }
+        listEl = listEl.parentElement && listEl.parentElement.closest('.blk-list[data-l]');
+      }
+      return null;
+    };
+    const moveTo = e => {
+      st.ghost.style.transform = `translate(${e.clientX - st.dx}px, ${e.clientY - st.dy}px)`;
+      const t = target(e.clientX, e.clientY);
+      st.t = t;
+      this.pal.classList.toggle('trash', !!(t && t.trash));
+      if (t && !t.trash) { st.mark.hidden = false; st.mark.style.transform = `translate(${t.x}px, ${t.y}px)`; }
+      else st.mark.hidden = true;
+      // si estás cerca del borde, la zona de bloques se desplaza sola
+      const wr = this.ws.getBoundingClientRect();
+      st.scroll = e.clientY < wr.top + 36 ? -10 : e.clientY > wr.bottom - 36 ? 10 : 0;
+      if (st.scroll && !st.raf) { const tick = () => { if (!st || !st.scroll) { if (st) st.raf = 0; return; } this.ws.scrollTop += st.scroll; st.raf = requestAnimationFrame(tick); }; st.raf = requestAnimationFrame(tick); }
+    };
+    const end = (drop) => {
+      if (!st) return;
+      const s = st; st = null;
+      clearTimeout(s.timer);
+      if (s.raf) cancelAnimationFrame(s.raf);
+      if (!s.active) return;
+      this._dragged = true;
+      setTimeout(() => { this._dragged = false; this._touchDrag = false; }, 50);
+      s.ghost.remove(); s.mark.remove();
+      document.body.classList.remove('bk-dragging');
+      this.pal.classList.remove('trash');
+      if (s.src.el) s.src.el.classList.remove('dragging');
+      const t = s.t;
+      if (!drop || !t) return;
+      if (t.trash) { if (s.src.node) this.remove(s.src.node); return; }
+      if (s.src.node) this.move(s.src.node, t.L, t.index);
+      else this.insertCode(s.item, t.L, t.index);
+    };
+    view.addEventListener('pointerdown', e => {
+      if (e.button !== 0 || this.ro || e.target.closest('input, button, .bk-langs, .bk-cats')) return;
+      const el = e.target.closest('.blk'); if (!el) return;
+      let src;
+      if (el.classList.contains('pal-blk')) { const item = this.palItem(+el.dataset.p); src = { el, item }; }
+      else { const nd = this.nodes[+el.dataset.n]; if (!nd || !nd.parent || nd.parent.locked || nd.open) return; src = { el, node: nd, item: { lang: nd.lang, fits: this.fitsOf(nd) } }; }
+      st = { src, item: src.item, x: e.clientX, y: e.clientY, active: false, touch: e.pointerType === 'touch', id: e.pointerId };
+      if (st.touch) st.timer = setTimeout(() => { if (st && !st.active) { this._touchDrag = true; if (navigator.vibrate) try { navigator.vibrate(8); } catch (x) {} start({ clientX: st.x, clientY: st.y }, st.src); } }, 320);
+    });
+    window.addEventListener('pointermove', e => {
+      if (!st || e.pointerId !== st.id) return;
+      if (!st.active) {
+        const d = Math.hypot(e.clientX - st.x, e.clientY - st.y);
+        if (st.touch) { if (d > 10) { clearTimeout(st.timer); st = null; } return; }
+        if (d > 5) start(e, st.src);
+        return;
+      }
+      e.preventDefault();
+      moveTo(e);
+    }, { passive: false });
+    window.addEventListener('pointerup', e => { if (st && e.pointerId === st.id) end(true); });
+    window.addEventListener('pointercancel', e => { if (st && e.pointerId === st.id) end(false); });
+    window.addEventListener('keydown', e => { if (st && st.active && e.key === 'Escape') end(false); });
+    // con el dedo: mientras se arrastra, la página no se desplaza
+    view.addEventListener('touchmove', e => { if (st && st.active) e.preventDefault(); }, { passive: false });
+  },
+};
+
+/* =====================================================================
    CORRECTOR
    Revisa todo el proyecto y busca errores típicos de principiante.
    Cada problema trae:
@@ -3418,7 +4929,7 @@ const Symbols = {
     const P = Project.cur;
     const key = P ? P.id + ':' + P.updated + ':' + Project.rev : '';
     if (key === this._key && this._val) return this._val;
-    const S = { ids: new Set(), htmlClasses: new Set(), tags: new Set(), cssClasses: new Set(), cssIds: new Set(), cssVars: new Set(), jsIds: new Set(), jsFunctions: new Set(), jsVars: new Set(), jsDeclared: new Set(), storageKeys: new Set(), jsText: '', idsByFile: new Map() };
+    const S = { ids: new Set(), htmlClasses: new Set(), tags: new Set(), cssClasses: new Set(), cssIds: new Set(), cssVars: new Set(), jsIds: new Set(), jsFunctions: new Set(), jsVars: new Set(), jsDeclared: new Set(), storageKeys: new Set(), jsText: '', jsProps: new Set(), idsByFile: new Map() };
     if (!P) return S;
     const cssTexts = [], jsTexts = [];
     for (const path of Project.textPaths()) {
@@ -3455,6 +4966,9 @@ const Symbols = {
     for (const m of js.matchAll(/classList\.(?:add|remove|toggle|contains|replace)\(([^)]*)\)/g)) for (const s of m[1].matchAll(/["'`]([\w-]+)["'`]/g)) S.cssClasses.has(s[1]) || S.htmlClasses.add(s[1]);
     for (const m of js.matchAll(/(?:getItem|setItem|removeItem)\(\s*["'`]([^"'`]+)["'`]/g)) S.storageKeys.add(m[1]);
     const bj = blankOut(js, 'js');
+    // propiedades que crea el propio código ({ KEY: … }, objeto.nombre = …): no son erratas
+    for (const m of bj.matchAll(/([A-Za-z_$][\w$]*)\s*:(?!:)/g)) S.jsProps.add(m[1]);
+    for (const m of bj.matchAll(/\.([A-Za-z_$][\w$]*)\s*=(?!=)/g)) S.jsProps.add(m[1]);
     for (const m of bj.matchAll(/\bfunction\s*\*?\s+([\w$]+)/g)) S.jsFunctions.add(m[1]);
     for (const m of bj.matchAll(/\b(?:const|let|var)\s+([\w$]+)\s*=\s*(?:async\s*)?(?:function\b|\([^()]*\)\s*=>|[\w$]+\s*=>)/g)) S.jsFunctions.add(m[1]);
     for (const m of bj.matchAll(/\b(?:const|let|var)\s+([\w$]+)/g)) if (!S.jsFunctions.has(m[1])) S.jsVars.add(m[1]);
@@ -3762,6 +5276,9 @@ const Analyzer = {
     for (const m of b.matchAll(/^\s*(?:async\s+)?([\w$]+)\s*\([^)]*\)\s*\{/gm)) S.add(m[1]);
     for (const m of b.matchAll(/\bimport\s+([\w$]+)/g)) S.add(m[1]);
     for (const m of b.matchAll(/\bfor\s*\(\s*(?:const|let|var)\s+([\w$]+)/g)) S.add(m[1]);
+    // métodos y getters de objetos y clases: { get activo() { … }, guardar() { … } }
+    for (const m of b.matchAll(/\b(?:get|set|static|async)\s+([\w$]+)\s*\(/g)) S.add(m[1]);
+    for (const m of b.matchAll(/[{,]\s*([\w$]+)\s*\([^()]*\)\s*\{/g)) S.add(m[1]);
     return S;
   },
 
@@ -3996,8 +5513,10 @@ const Analyzer = {
     }
     // contenido después de </html>
     const htmlClose = toks.filter(t => t.type === 'close' && t.name === 'html').pop();
-    if (htmlClose && text.slice(htmlClose.end).trim()) {
-      const extra = text.slice(htmlClose.end);
+    // (los comentarios <\!-- --> detrás de </html> no molestan)
+    const afterHtml = htmlClose ? text.slice(htmlClose.end).replace(/<\!--[\s\S]*?(?:-->|$)/g, c => c.replace(/[^\n]/g, ' ')) : '';
+    if (htmlClose && afterHtml.trim()) {
+      const extra = afterHtml;
       add(P(htmlClose.end + extra.search(/\S/), text.length, 'warn', 'html-after', 'Hay contenido después de </html>', 'Todo tiene que ir dentro de <body>.',
         this.fixFn(path, text, 'Meterlo dentro de <body>', () => {
           let t2 = text.slice(0, htmlClose.end).trimEnd() + '\n';
@@ -4213,6 +5732,8 @@ const Analyzer = {
     if (!sel || (parent && parent.keyframes)) return;
     if (/[.#](\s|,|\{|$)/.test(sel)) add2(P(at, at + sel.length, 'error', 'css-empty-sel', `Selector incompleto: «${sel}»`, 'Detrás de . o # tiene que ir el nombre de la clase o del id.'));
     const re = /(^|[\s,>+~(])([a-zA-Z][\w-]*)(?=[\s,>+~:.#[{)]|$)/g;
+    // lo de dentro de ::view-transition-old(root), :lang(es), :nth-child(odd)… no son etiquetas
+    sel = sel.replace(/(::?(?!not\b|is\b|where\b|has\b)[\w-]+)\(([^()]*)\)/g, (all, fn, arg) => fn + '(' + ' '.repeat(arg.length) + ')');
     let m;
     while ((m = re.exec(sel))) {
       const w = m[2], lw = w.toLowerCase();
@@ -4330,7 +5851,7 @@ const Analyzer = {
       }
       if (b[m.index - 1] === '.' && !fix) {
         const known = [...DICT.jsGeneric, ...Object.values(DICT.jsMembers).flat()];
-        if (!known.includes(w)) { const k = known.find(x => x.toLowerCase() === w.toLowerCase()); if (k && !declaredHere.has(w)) this._add(P(m.index, m.index + w.length, 'error', 'js-case', `«${w}» debería escribirse «${k}»`, 'JavaScript distingue mayúsculas y minúsculas.', R(m.index, m.index + w.length, k, `Cambiar a ${k}`, `${w} → ${k}`))); }
+        if (!known.includes(w)) { const k = known.find(x => x.toLowerCase() === w.toLowerCase()); if (k && !declaredHere.has(w) && !S.jsProps.has(w)) this._add(P(m.index, m.index + w.length, 'error', 'js-case', `«${w}» debería escribirse «${k}»`, 'JavaScript distingue mayúsculas y minúsculas.', R(m.index, m.index + w.length, k, `Cambiar a ${k}`, `${w} → ${k}`))); }
       }
     }
     // getElementById / querySelector
@@ -4973,7 +6494,7 @@ const Memoria = {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Memoria · ${esc(P.name)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>${this.CSS.replace('__A__', accent)}</style>
 </head>
 <body>
@@ -6711,6 +8232,7 @@ const UI = {
       ['Ajustes', 'settings', '', () => this.settingsDialog()],
       ['Tema claro / oscuro', 'moon', '', () => { Prefs.set('theme', document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'); }],
       ['Ajuste de línea (sí/no)', 'wrap', 'Alt+Z', () => Prefs.set('wrap', !Prefs.get('wrap'))],
+      ['Ver el código como bloques (como Scratch)', 'blocks', '', () => { this.showView('code'); Blocks.toggle(); }],
       ['Mostrar u ocultar archivos', 'sidebar', 'Ctrl+B', () => this.toggleSidebar()],
       ['Mostrar u ocultar el panel derecho', 'panel-right', '', () => this.toggleRight()],
       ['Mostrar u ocultar consola y problemas', 'panel-bottom', 'Ctrl+J', () => this.toggleDock()],
@@ -7129,12 +8651,13 @@ Object.assign(UI, {
           ['Ordenar sangrías', `<kbd>Mayús</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd>`], ['Pedir sugerencias', `<kbd>${K}</kbd>+<kbd>Espacio</kbd>`], ['Abreviaturas HTML (ul>li*3, !)', `<kbd>Tab</kbd>`],
           ['Ajuste de línea', `<kbd>Alt</kbd>+<kbd>Z</kbd>`], ['Nuevo archivo', `<kbd>Alt</kbd>+<kbd>N</kbd>`], ['Mostrar/ocultar archivos', `<kbd>${K}</kbd>+<kbd>B</kbd>`],
           ['Mostrar/ocultar consola', `<kbd>${K}</kbd>+<kbd>J</kbd>`], ['Renombrar (en archivos)', '<kbd>F2</kbd>'], ['Ayuda', '<kbd>F1</kbd>'],
+          ['Bloques: borrar / duplicar el elegido', `<kbd>Supr</kbd> · <kbd>${K}</kbd>+<kbd>D</kbd>`], ['Bloques: deshacer', `<kbd>${K}</kbd>+<kbd>Z</kbd>`], ['Bloques: ver en el código', '<kbd>Enter</kbd> o doble clic'],
         ].map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join('')}</div></div>`;
       } else if (s === 'about') {
         html = `<div class="set-sec"><h3>Creador Web</h3>
           <p style="color:var(--muted)">Un editor para crear páginas web con HTML, CSS y JavaScript que funciona entero en el navegador: carpetas ordenadas, vista previa, corrector que explica los errores y coloca cada cosa en su sitio, memoria automática y asistente.</p>
           <p style="color:var(--muted)">Tus proyectos se guardan solo en este navegador. Nada sale de aquí salvo que uses el asistente con IA (que envía el proyecto a la API de Claude de Anthropic con tu clave) o abras enlaces externos.</p>
-          <p style="color:var(--muted)">Hecho con HTML, CSS y JavaScript, sin librerías. Funciona sin internet una vez abierto (salvo las fuentes y el asistente con IA).</p></div>`;
+          <p style="color:var(--muted)">Hecho con HTML, CSS y JavaScript, sin librerías. La vista de bloques está inspirada en Scratch. Funciona sin internet una vez abierto (salvo las fuentes y el asistente con IA).</p></div>`;
       }
       body.innerHTML = html;
       // enlazar controles
@@ -7379,6 +8902,7 @@ const Tour = {
     { sel: '#sidebar', view: 'files', t: 'Tus archivos', p: 'Las carpetas ya están hechas: html para las páginas, css para los estilos y js para el código. Puedes crear, renombrar y arrastrar archivos, o soltar imágenes desde tu ordenador.' },
     { sel: '.t-row[data-path="memoria"]', view: 'files', t: 'La carpeta memoria', p: 'Esta no se puede borrar. memoria.html se escribe sola con todo lo que haces (archivos, explicaciones, diario de cambios…) y notas.md es para tus apuntes.' },
     { sel: '#editor', view: 'code', t: 'El editor', p: 'Colorea el código, cierra etiquetas y paréntesis, te sugiere cosas mientras escribes (Ctrl+Espacio) y entiende abreviaturas: escribe ul>li*3 y pulsa Tab.' },
+    { sel: '#btnBlocks', view: 'code', t: 'Bloques, como en Scratch', p: 'Con este botón ves el mismo código como bloques de colores. Puedes arrastrarlos para cambiarlos de sitio, añadir bloques nuevos desde la izquierda y escribir dentro de los huecos blancos. Todo se escribe en el código.' },
     { sel: '#notebar', view: 'code', t: 'La nota de cada archivo', p: 'Explica con tus palabras qué hace el archivo. Tus notas salen en la memoria como «Mi explicación».' },
     { sel: '#dock', view: 'code', dock: true, t: 'Problemas y consola', p: 'El corrector dice qué falla y por qué, y muchas cosas las arregla con un clic. Si pones CSS o JavaScript donde no toca, lo mueve a su carpeta.' },
     { sel: '#panePreview', alt: '#rightpanel', view: 'preview', t: 'Vista previa', p: 'Tu página en directo mientras escribes. Pruébala en tamaño móvil o ábrela en una pestaña nueva (para usar Bluetooth).' },
@@ -7578,16 +9102,19 @@ const RECIPES = [
    4. Carga la vista previa y, la primera vez, la bienvenida.
    ===================================================================== */
 (async function boot() {
-  Prefs.load();
-  UI.applyTheme();
-  const withIntro = Intro.shouldPlay();
-  if (withIntro) Intro.cover();
-  Preview.hold = true; // la vista previa espera a que acabe la animación (así va más fluida)
+  window.__cwAlive = true; // el aviso de «no se ha podido abrir» sabe así que el programa sí ha arrancado
+  let withIntro = false;
   try {
+    Prefs.load();
+    UI.applyTheme();
+    withIntro = Intro.shouldPlay();
+    if (withIntro) Intro.cover();
+    Preview.hold = true; // la vista previa espera a que acabe la animación (así va más fluida)
     await DB.open();
     Editor.init(); Find.init(); AC.init(); Syntax.init();
     Preview.init(); Con.init(); Chat.init(); Review.init(); Recipes.init();
     UI.init();
+    Blocks.init();
     let opened = false;
     const last = Prefs.get('lastProject');
     if (last) opened = await Project.open(last);
@@ -7603,7 +9130,7 @@ const RECIPES = [
     return;
   }
   await new Promise(r => requestAnimationFrame(() => setTimeout(r, 30)));
-  if (withIntro) await Intro.play();
+  if (withIntro) { try { await Intro.play(); } catch (e) { console.warn('intro', e); $('#intro').hidden = true; } }
   document.body.classList.add('ready');
   Preview.hold = false;
   Preview.refresh(true);
