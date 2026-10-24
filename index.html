@@ -378,10 +378,11 @@ body.app-in .reveal { opacity: 1; transform: none; }
 .icon-btn:hover { color: var(--text); }
 
 /* ---------- Aviso de compatibilidad ---------- */
-.notice { display: flex; gap: 12px; padding: 13px 14px; border-color: rgb(var(--warn) / .3); }
+.notice { display: flex; gap: 12px; padding: 13px 14px; border-color: rgb(var(--warn) / .3); cursor: pointer; }
 .notice-ic { width: 34px; height: 34px; flex: none; border-radius: 11px; display: grid; place-items: center; background: rgb(var(--warn) / .14); color: rgb(var(--warn)); }
 .notice b { display: block; font-size: 14px; margin: 1px 0 3px; }
 .notice p { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+.notice .notice-more { margin-top: 4px; color: rgb(var(--warn)); font-weight: 600; }
 
 /* ---------- Botón Conectar con anillo radar ---------- */
 .connect-card { padding: 8px; display: flex; align-items: center; }
@@ -690,6 +691,21 @@ body.app-in .reveal { opacity: 1; transform: none; }
 .btn.ghost { color: var(--text); background: var(--faint); border-color: var(--line); }
 .btn svg { width: 18px; height: 18px; }
 
+/* ---------- Ayuda: lista de comprobación ---------- */
+.help-sheet h2 { margin: 2px 0 0; }
+.checks { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 8px; }
+.check { display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; padding: 10px 12px; border-radius: 15px; background: var(--faint); border: 1px solid var(--line); }
+.check .ck { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 700 12px var(--mono); color: var(--muted); background: var(--faint-2); }
+.check .ck svg { width: 15px; height: 15px; }
+.check b { display: block; font-size: 13.5px; line-height: 1.3; margin-top: 3px; }
+.check p { margin: 3px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+.check[data-s="ok"] .ck { color: rgb(var(--ok)); background: rgb(var(--ok) / .15); }
+.check[data-s="bad"] { border-color: rgb(var(--danger) / .45); background: rgb(var(--danger) / .07); }
+.check[data-s="bad"] .ck { color: rgb(var(--danger)); background: rgb(var(--danger) / .15); }
+.check[data-s="hot"] { border-color: rgb(var(--warn) / .5); background: rgb(var(--warn) / .07); }
+.check[data-s="hot"] .ck { color: rgb(var(--warn)); background: rgb(var(--warn) / .16); }
+.help-actions .help-close { grid-column: 1 / -1; }
+
 /* =====================================================================
    8. GUÍA PASO A PASO (foco sobre la interfaz real)
    ===================================================================== */
@@ -757,6 +773,7 @@ body.app-in .reveal { opacity: 1; transform: none; }
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
     <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
     <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></symbol>
     <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></symbol>
     <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
     <symbol id="i-guide" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16.2 7.8-2.1 6.3-6.3 2.1 2.1-6.3z"/></symbol>
@@ -886,12 +903,13 @@ body.app-in .reveal { opacity: 1; transform: none; }
         </div>
       </div>
     </div>
+    <button class="icon-btn" id="helpBtn" aria-label="Ayuda: ¿no conecta?"><svg class="ic"><use href="#i-help"/></svg></button>
     <button class="icon-btn" id="settingsBtn" aria-label="Ajustes"><svg class="ic"><use href="#i-sliders"/></svg></button>
   </header>
 
   <div class="notice card reveal" id="notice" style="--i:1" hidden role="alert">
     <span class="notice-ic"><svg class="ic"><use href="#i-alert"/></svg></span>
-    <div><b id="noticeTitle"></b><p id="noticeText"></p></div>
+    <div><b id="noticeTitle"></b><p id="noticeText"></p><p class="notice-more">Toca aquí para ver cómo arreglarlo.</p></div>
   </div>
 
   <section class="card connect-card reveal" style="--i:1">
@@ -991,6 +1009,21 @@ body.app-in .reveal { opacity: 1; transform: none; }
   </div>
 </div>
 
+<!-- Ayuda: ¿por qué no conecta? -->
+<div class="modal" id="helpModal" hidden>
+  <div class="modal-scrim" id="helpScrim"></div>
+  <div class="sheet card help-sheet" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <h2 id="helpTitle">¿Por qué no conecta?</h2>
+    <p id="helpLead">Revisa estos puntos en orden. Los que la app puede comprobar sola ya salen marcados.</p>
+    <ol class="checks" id="helpChecks"></ol>
+    <div class="sheet-actions help-actions">
+      <button class="btn ghost" id="helpAll">Ver todos los dispositivos</button>
+      <button class="btn primary" id="helpRetry"><svg class="ic"><use href="#i-bt"/></svg>Probar otra vez</button>
+      <button class="btn ghost help-close" id="helpClose">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Guía -->
 <div class="tour" id="tour" hidden>
   <div class="tour-hole" id="tourHole"></div>
@@ -1064,6 +1097,13 @@ function withTimeout(promise, ms) {
     timer = setTimeout(() => reject(Object.assign(new Error('timeout'), { name: 'TimeoutError' })), ms);
   });
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+// Apunta en el error en qué paso de la conexión falló (para explicar bien la causa).
+function atStage(e, stage) {
+  if (!e) e = new Error('Error desconocido');
+  try { if (!e.stage) e.stage = stage; } catch (_) { /* nada */ }
+  return e;
 }
 
 /* ========== 2. PREFERENCIAS ========== */
@@ -1226,21 +1266,22 @@ class MicrobitUART {
     catch (e) { console.error(e); }
   }
 
-  /* --- Conectar: abre el selector de dispositivos del navegador --- */
-  async connect() {
+  /* --- Conectar: abre el selector de dispositivos del navegador ---
+     Normalmente solo enseña los «BBC micro:bit». Con all = true enseña todos
+     (por si el móvil no ve bien el nombre del micro:bit). */
+  async connect({ all = false } = {}) {
     if (this.state !== 'disconnected') return;
     this.userClosing = false;
     this._set('connecting', { phase: 'search' });
     let device;
     try {
-      // Filtramos por el prefijo del nombre y pedimos permiso para el servicio UART.
-      device = await navigator.bluetooth.requestDevice({
-        filters: [{ namePrefix: NAME_PREFIX }],
-        optionalServices: [UART.SERVICE],
-      });
+      // Pedimos permiso para el servicio UART (si no, luego no se podría usar).
+      device = await navigator.bluetooth.requestDevice(all
+        ? { acceptAllDevices: true, optionalServices: [UART.SERVICE] }
+        : { filters: [{ namePrefix: NAME_PREFIX }], optionalServices: [UART.SERVICE] });
     } catch (e) {
       this._set('disconnected', { reason: 'error' });
-      throw e;
+      throw atStage(e, 'chooser');
     }
     if (this.device && this.device !== device) this.device.removeEventListener('gattserverdisconnected', this._onDisc);
     this.device = device;
@@ -1266,23 +1307,45 @@ class MicrobitUART {
       this._set('connected');
     } catch (e) {
       this.busyOpening = false;
-      try { if (this.device && this.device.gatt.connected) this.device.gatt.disconnect(); } catch (_) { /* nada */ }
+      try { if (this.device) this.device.gatt.disconnect(); } catch (_) { /* nada */ }
       this._cleanup();
       this._set('disconnected', { reason: 'error' });
       throw e;
     }
   }
 
-  async _setupGatt() {
-    // 1) Conectar con el servidor GATT del micro:bit (máx. 12 s).
-    const server = await withTimeout(this.device.gatt.connect(), 12000);
-    if (this.userClosing) throw Object.assign(new Error('cancelado'), { name: 'AbortError' });
+  async _setupGatt(attempts = 3) {
+    const gatt = this.device.gatt;
+    const aborted = () => Object.assign(new Error('cancelado'), { name: 'AbortError' });
 
-    // 2) Obtener el servicio UART. Algunos Android tardan en "descubrir" servicios: 1 reintento.
-    let service;
-    for (let i = 0; i < 2; i++) {
-      try { service = await server.getPrimaryService(UART.SERVICE); break; }
-      catch (e) { if (i === 1 || !this.device.gatt.connected) throw e; await sleep(500); }
+    // 1) Conectar con el micro:bit. En Android el primer intento falla a menudo
+    //    ("Connection attempt failed"), así que se reintenta. Si el micro:bit ni
+    //    contesta (dos esperas largas), no se insiste: casi siempre es que su
+    //    programa pide emparejamiento y no deja conectar a un móvil desconocido.
+    let server = null, lastErr = null, waits = 0;
+    for (let i = 0; i < attempts && !server; i++) {
+      if (this.userClosing) throw aborted();
+      if (i) { this._set('connecting', { phase: 'gatt', attempt: i + 1, of: attempts }); await sleep(500 * i); }
+      try { server = await withTimeout(gatt.connect(), 9000); }
+      catch (e) {
+        lastErr = e;
+        try { gatt.disconnect(); } catch (_) { /* cancela el intento que quedara pendiente */ }
+        if (e.name === 'TimeoutError' && ++waits >= 2) break;
+      }
+    }
+    if (!server) throw atStage(lastErr, 'connect');
+    if (this.userClosing) throw aborted();
+
+    // 2) Buscar el servicio UART. Algunos Android tardan en "descubrir" los servicios.
+    let service = null;
+    for (let i = 0; i < 3 && !service; i++) {
+      try { service = await withTimeout(server.getPrimaryService(UART.SERVICE), 6000); }
+      catch (e) {
+        // Si el micro:bit corta justo después de conectar, el problema es el emparejamiento, no el servicio.
+        if (!gatt.connected) throw atStage(e, 'connect');
+        if (i === 2) throw atStage(e, 'service');
+        await sleep([300, 900][i]);
+      }
     }
 
     // 3) Pedir las dos características y elegir cada una por sus PROPIEDADES.
@@ -1294,7 +1357,10 @@ class MicrobitUART {
     const canNotify = c => c.properties.notify || c.properties.indicate;
     this.writeChar = chars.find(c => canWrite(c) && !canNotify(c)) || chars.find(canWrite) || null;
     this.notifyChar = chars.find(c => c !== this.writeChar && canNotify(c)) || null;
-    if (!this.writeChar) throw Object.assign(new Error('El servicio UART no tiene canal de escritura'), { name: 'NoUartWrite' });
+    if (!this.writeChar) {
+      if (!gatt.connected) throw atStage(new Error('Se cortó la conexión'), 'connect');
+      throw Object.assign(new Error('El servicio UART no tiene canal de escritura'), { name: 'NoUartWrite', stage: 'service' });
+    }
     console.info('[BLE] Escribiendo en', this.writeChar.uuid, '| Recibiendo de', this.notifyChar ? this.notifyChar.uuid : '(ninguna)');
 
     // 4) Activar la recepción de mensajes del micro:bit (opcional: si falla, seguimos).
@@ -1343,14 +1409,14 @@ class MicrobitUART {
       if (this.userClosing) break;                        // el usuario canceló
       this.busyOpening = true;
       try {
-        await this._setupGatt();
+        await this._setupGatt(2);
         this.busyOpening = false;
         if (this.userClosing) { try { this.device.gatt.disconnect(); } catch (e) { /* nada */ } break; }
         this._set('connected', { reconnected: true });
         return;
       } catch (e) {
         this.busyOpening = false;
-        try { if (this.device.gatt.connected) this.device.gatt.disconnect(); } catch (_) { /* nada */ }
+        try { this.device.gatt.disconnect(); } catch (_) { /* nada */ }
         this._cleanup();
       }
     }
@@ -1442,34 +1508,48 @@ class MicrobitUART {
 }
 
 // Traduce los errores técnicos de Web Bluetooth a mensajes claros.
+// "reason" dice qué puntos de la ayuda («¿Por qué no conecta?») hay que mirar.
 function explainBleError(e) {
   const name = (e && e.name) || '';
   const msg = String((e && e.message) || '');
-  if (name === 'NotFoundError' && /cancel/i.test(msg)) return { type: 'info', title: 'Búsqueda cancelada', text: 'Cuando quieras, vuelve a pulsar Conectar.' };
-  if (name === 'NotFoundError' && /(adapter|not available|unavailable|turned off)/i.test(msg)) return { type: 'warn', title: 'Bluetooth apagado', text: 'Activa el Bluetooth (y la ubicación en Android) y vuelve a intentarlo.' };
-  if (name === 'NotFoundError' || name === 'NoUartWrite') return { type: 'error', title: 'Servicio UART no encontrado', text: 'Revisa en MakeCode que el programa inicie el servicio UART por Bluetooth y vuelve a descargarlo al micro:bit.' };
-  if (name === 'SecurityError') return { type: 'error', title: 'Conexión no permitida', text: 'Web Bluetooth necesita HTTPS (o localhost) y que pulses tú el botón.' };
-  if (name === 'NotAllowedError') return { type: 'warn', title: 'Permiso denegado', text: 'Permite a Chrome usar Bluetooth / dispositivos cercanos en los ajustes del móvil.' };
+  const stage = (e && e.stage) || '';
   if (name === 'AbortError') return null;
-  if (name === 'TimeoutError') return { type: 'error', title: 'El coche no responde', text: 'Acerca el móvil, comprueba la batería del micro:bit y reinícialo.' };
-  if (name === 'NetworkError') return { type: 'error', title: 'No se pudo conectar', text: 'Fallo de Bluetooth. Reinicia el micro:bit, acércate y vuelve a intentarlo.' };
-  return { type: 'error', title: 'Algo falló al conectar', text: msg || 'Inténtalo de nuevo.' };
+  if (stage === 'connect') return { type: 'error', reason: 'connect', title: 'El micro:bit no deja conectar', text: 'Casi siempre es el emparejamiento: en MakeCode pon «No Pairing Required», vuelve a descargar el programa y «olvida» el micro:bit en los ajustes Bluetooth del móvil.' };
+  if (stage === 'service' || name === 'NoUartWrite') return { type: 'error', reason: 'service', title: 'El micro:bit no tiene el Bluetooth UART', text: 'Su programa no inicia el servicio UART. Descarga al micro:bit el programa nuevo de MakeCode.' };
+  if (name === 'NotFoundError' && /cancel/i.test(msg)) return { type: 'info', reason: 'list', title: 'No se eligió ningún micro:bit', text: '¿No salía en la lista? Mira la ayuda.' };
+  if (name === 'NotFoundError' && /(adapter|not available|unavailable|turned off|disabled)/i.test(msg)) return { type: 'warn', reason: 'bt', title: 'Bluetooth apagado o bloqueado', text: 'Activa el Bluetooth (y la ubicación en Android) y vuelve a intentarlo.' };
+  if (name === 'SecurityError') return { type: 'error', reason: 'https', title: 'El navegador bloquea el Bluetooth aquí', text: 'Abre la app en una pestaña normal de Chrome, con una dirección https://.' };
+  if (name === 'NotAllowedError') return { type: 'warn', reason: 'perm', title: 'Permiso denegado', text: 'Deja que Chrome use «Dispositivos cercanos» y la ubicación en los ajustes del móvil.' };
+  if (name === 'TimeoutError' || name === 'NetworkError') return { type: 'error', reason: 'connect', title: 'No se pudo conectar', text: 'Acércate, reinicia el micro:bit y comprueba que su programa tiene «No Pairing Required».' };
+  return { type: 'error', reason: 'other', title: 'Algo falló al conectar', text: msg || 'Inténtalo de nuevo.' };
 }
 
-// ¿Puede este navegador usar Web Bluetooth?
+// ¿Puede este navegador usar Web Bluetooth? (y si no, por qué exactamente)
 const Support = {
+  inFrame() { try { return window.self !== window.top; } catch (e) { return true; } },
   check() {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const ua = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const inApp = /; wv\)|FBAN|FBAV|Instagram|WhatsApp|Line\//.test(ua);
+    if (location.protocol === 'file:' || location.protocol === 'content:') {
+      return { ok: false, code: 'https', title: 'Has abierto el archivo directamente', text: 'Así el móvil no deja usar Bluetooth. Ábrela desde su dirección https:// (GitHub Pages) en Chrome; mira el README.' };
+    }
     if (!window.isSecureContext) {
-      return { ok: false, title: 'Abre la app por HTTPS', text: 'Web Bluetooth solo funciona en páginas https:// o en localhost. Usa GitHub Pages o un servidor local (mira el README).' };
+      return { ok: false, code: 'https', title: 'Abre la app por HTTPS', text: 'Web Bluetooth solo funciona en páginas https:// o en localhost. Usa GitHub Pages o un servidor local (mira el README).' };
+    }
+    if (this.inFrame()) {
+      return { ok: false, code: 'https', title: 'Ábrela en una pestaña propia', text: 'Dentro de otra página (vista previa, visor…) el navegador bloquea el Bluetooth. Ábrela sola en Chrome.' };
     }
     if (!('bluetooth' in navigator)) {
       return {
         ok: false,
+        code: 'browser',
         title: 'Este navegador no puede usar Bluetooth',
         text: isIOS
           ? 'En iPhone/iPad, Safari no lo permite. Instala la app gratuita «Bluefy» y abre esta página desde ella. Puedes explorar la interfaz igualmente.'
-          : 'Usa Google Chrome o Microsoft Edge (Android, Windows, macOS o ChromeOS). Puedes explorar la interfaz igualmente.',
+          : inApp
+            ? 'Estás en el navegador de otra app (WhatsApp, Instagram, Gmail…). Ábrela en Chrome: menú ⋮ → «Abrir en Chrome».'
+            : 'Usa Google Chrome o Microsoft Edge (Android, Windows, macOS o ChromeOS). Puedes explorar la interfaz igualmente.',
       };
     }
     return { ok: true };
@@ -1878,6 +1958,94 @@ const Sheet = (() => {
   return { open, get isOpen() { return !modal.hidden; } };
 })();
 
+/* ========== 8b. AYUDA: ¿POR QUÉ NO CONECTA? ==========
+   Lista de comprobación. Lo que la app puede saber sola (https, navegador,
+   Bluetooth encendido) sale ya marcado; el resto lo revisa la persona. Los
+   puntos relacionados con el último error salen resaltados. */
+const Help = (() => {
+  const modal = $('#helpModal'), list = $('#helpChecks'), lead = $('#helpLead');
+  let onClose = null;
+  const ICON = { ok: '<svg class="ic"><use href="#i-check"/></svg>', bad: '!', hot: '!' };
+  // reason → puntos que hay que resaltar
+  const HOT = {
+    connect: ['pairing', 'forget', 'other'],
+    service: ['program'],
+    list: ['near', 'perm', 'other', 'program'],
+    bt: ['perm'],
+    perm: ['perm'],
+    norx: ['program', 'pairing'],
+    sendfail: ['pairing', 'forget'],
+  };
+
+  async function items(reason) {
+    const sup = Support.check();
+    let bt = null;                                         // null = no se sabe
+    if (sup.ok && navigator.bluetooth.getAvailability) {
+      try { bt = await withTimeout(navigator.bluetooth.getAvailability(), 1500); } catch (e) { bt = null; }
+    }
+    const hot = new Set(HOT[reason] || []);
+    const page = sup.ok || sup.code === 'browser'
+      ? { s: 'ok', t: 'Página abierta por https en una pestaña propia' }
+      : { s: 'bad', t: sup.title, p: sup.text };
+    const browser = sup.ok
+      ? { s: 'ok', t: 'Navegador compatible con Bluetooth' }
+      : sup.code === 'browser' ? { s: 'bad', t: sup.title, p: sup.text } : { s: 'todo', t: 'Navegador compatible con Bluetooth', p: 'Usa Chrome o Edge (en iPhone, la app Bluefy).' };
+    const list = [
+      page,
+      browser,
+      bt === true ? { s: 'ok', t: 'Bluetooth del móvil encendido' }
+        : bt === false ? { s: 'bad', t: 'Bluetooth apagado o sin permiso', p: 'Enciende el Bluetooth y, en Android, también la ubicación.' }
+        : { id: 'perm', t: 'Bluetooth y ubicación encendidos', p: 'En Android, Chrome necesita el Bluetooth y la ubicación activados.' },
+      { id: 'pairing', t: 'Programa con «No Pairing Required»', p: 'Es la causa más común. En MakeCode: rueda dentada ⚙ → Configuración del proyecto → «No Pairing Required: Anyone can connect via Bluetooth» → Guardar, y vuelve a Descargar el programa al micro:bit. Con el ajuste por defecto el micro:bit ignora a los móviles que no estén emparejados.' },
+      { id: 'program', t: 'El micro:bit tiene el programa nuevo', p: 'Al encenderlo debe salir en su pantalla el símbolo de Bluetooth. Si sale otra cosa, vuelve a descargarle el programa del README (necesita las extensiones bluetooth y maqueen, y ninguna de radio).' },
+      { id: 'forget', t: 'Olvida el micro:bit en el móvil', p: 'Si alguna vez lo emparejaste en Ajustes → Bluetooth, tócalo y elige «Olvidar» o «Desvincular». No lo emparejes desde ahí: conéctalo solo desde esta app.' },
+      { id: 'other', t: 'Nadie más conectado al micro:bit', p: 'Solo admite una conexión. Cierra la app micro:bit o MakeCode en otros móviles, tablets u ordenadores.' },
+      { id: 'perm', t: 'Permisos de Chrome (Android)', p: 'Ajustes → Aplicaciones → Chrome → Permisos: permite «Dispositivos cercanos» y «Ubicación».' },
+      { id: 'near', t: 'Cerca, con pilas y recién reiniciado', p: 'Acerca el móvil (a menos de 2 m), comprueba las pilas del coche y pulsa el botón de reinicio de detrás del micro:bit.' },
+    ];
+    // quita el duplicado de permisos si el Bluetooth ya salió como "no se sabe"
+    const seen = new Set();
+    return list.filter(it => !it.id || !seen.has(it.id) && seen.add(it.id))
+      .map(it => ({ ...it, s: it.s || (hot.has(it.id) ? 'hot' : 'todo') }));
+  }
+
+  async function show(reason = '') {
+    const rows = await items(reason);
+    lead.textContent = reason && HOT[reason]
+      ? 'Mira primero los puntos resaltados: son la causa más probable de lo que acaba de pasar.'
+      : 'Revisa estos puntos en orden. Los que la app puede comprobar sola ya salen marcados.';
+    list.innerHTML = '';
+    rows.forEach((it, i) => {
+      const li = document.createElement('li');
+      li.className = 'check';
+      li.dataset.s = it.s;
+      li.innerHTML = `<span class="ck">${ICON[it.s] || i + 1}</span><div><b></b>${it.p ? '<p></p>' : ''}</div>`;
+      li.querySelector('b').textContent = it.t;
+      if (it.p) li.querySelector('p').textContent = it.p;
+      list.append(li);
+    });
+    $('#helpAll').hidden = $('#helpRetry').hidden = !Support.check().ok;
+    modal.hidden = false;
+    document.body.classList.add('lock');
+    requestAnimationFrame(() => requestAnimationFrame(() => modal.classList.add('on')));
+    const first = $('.check[data-s="bad"], .check[data-s="hot"]', list);
+    if (first) setTimeout(() => first.scrollIntoView({ block: 'nearest' }), 450);
+  }
+  function hide() {
+    if (modal.hidden) return;
+    modal.classList.remove('on');
+    setTimeout(() => { modal.hidden = true; if (!Tour.active && !Sheet.isOpen) document.body.classList.remove('lock'); }, 420);
+  }
+  // Los botones llaman a la conexión en el mismo clic (el navegador lo exige para abrir la lista).
+  $('#helpAll').addEventListener('click', () => { hide(); onClose && onClose({ all: true }); });
+  $('#helpRetry').addEventListener('click', () => { hide(); onClose && onClose({ all: false }); });
+  $('#helpClose').addEventListener('click', hide);
+  $('#helpScrim').addEventListener('click', hide);
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) hide(); });
+
+  return { show, hide, set onRetry(f) { onClose = f; }, get isOpen() { return !modal.hidden; } };
+})();
+
 /* ========== 9. GUÍA PASO A PASO ========== */
 const Tour = (() => {
   const el = $('#tour'), hole = $('#tourHole'), card = $('#tourCard');
@@ -1992,6 +2160,9 @@ const ui = {
 
 let support = { ok: true };
 let prevState = 'disconnected';
+let sendErrorShown = false;     // el aviso de "no recibe comandos", una vez por conexión
+let heardBack = false;          // ¿ha contestado algo el micro:bit desde que se conectó?
+let heardTimer = 0;
 const extrasState = { luces: false, seguridad: false };
 
 // --- Instancia del Bluetooth con sus "manejadores" de eventos ---
@@ -2010,10 +2181,20 @@ const ble = new MicrobitUART({
       ble.send('vel' + speedValue());
       lastVelSent = speedValue();
       Toast.show({ type: 'ok', title: info.reconnected ? 'Reconectado' : '¡Conectado!', text: info.name || 'BBC micro:bit' });
+      // El programa del micro:bit contesta "listo" al primer comando. Si no llega nada,
+      // seguramente tiene un programa antiguo o distinto: lo decimos (sin bloquear nada).
+      sendErrorShown = false; heardBack = false;
+      clearTimeout(heardTimer);
+      if (!info.reconnected && ble.notifyChar) {
+        heardTimer = setTimeout(() => {
+          if (!heardBack && ble.connected) Toast.show({ type: 'info', title: 'Conectado, pero el micro:bit no contesta', text: 'Si el coche no obedece, cárgale el programa nuevo de MakeCode.', action: { label: '¿Qué hago?', run: () => Help.show('norx') }, duration: 8000 });
+        }, 4500);
+      }
     } else if (prevState === 'connected') {
       releaseAll(false);                                  // conexión perdida: la cruceta vuelve a reposo
     }
     if (state === 'disconnected') {
+      clearTimeout(heardTimer);
       releaseAll(false);
       if (info.reason === 'lost') {
         Haptics.pulse([40, 60, 40]);
@@ -2026,11 +2207,17 @@ const ble = new MicrobitUART({
   },
   onSent: cmd => showSent(cmd, 'sent'),
   onReceive: text => {
+    heardBack = true;
     ui.lastRx.textContent = text.length > 18 ? text.slice(0, 17) + '…' : text;
     ui.lastRx.dataset.state = 'sent';
     ui.lastRx.animate([{ opacity: .3 }, { opacity: 1 }], { duration: 300, easing: EASE });
   },
-  onSendError: () => { /* el reintento ya se hizo; no saturamos con avisos */ },
+  // Si un comando no se puede escribir (ya con reintento), avisamos una sola vez por conexión.
+  onSendError: () => {
+    if (sendErrorShown || !ble.connected) return;
+    sendErrorShown = true;
+    Toast.show({ type: 'error', title: 'El micro:bit no recibe los comandos', text: 'Suele ser el emparejamiento o un programa antiguo.', action: { label: '¿Qué hago?', run: () => Help.show('sendfail') } });
+  },
 });
 
 function renderConnection(state, info = {}) {
@@ -2043,7 +2230,7 @@ function renderConnection(state, info = {}) {
     ui.connectIcon.setAttribute('href', '#i-bt');
     if (info.phase === 'search') { ui.connectLabel.textContent = 'Buscando…'; ui.connectSub.textContent = 'Elige tu «BBC micro:bit» en la lista'; }
     else if (info.phase === 'reconnect') { ui.connectLabel.textContent = 'Reconectando…'; ui.connectSub.textContent = `Intento ${info.attempt} · toca para cancelar`; }
-    else { ui.connectLabel.textContent = 'Conectando…'; ui.connectSub.textContent = info.name || 'micro:bit'; }
+    else { ui.connectLabel.textContent = 'Conectando…'; ui.connectSub.textContent = info.attempt ? `Intento ${info.attempt} de ${info.of} · ${info.name || 'micro:bit'}` : info.name || 'micro:bit'; }
   } else if (state === 'connected') {
     ui.connectIcon.setAttribute('href', '#i-check');
     ui.connectLabel.textContent = 'Desconectar';
@@ -2055,24 +2242,28 @@ function renderConnection(state, info = {}) {
   }
 }
 
-async function tryConnect(reuseDevice = false) {
+async function tryConnect(reuseDevice = false, { all = false } = {}) {
   if (!support.ok) {
-    Toast.show({ type: 'warn', title: support.title, text: support.text });
+    Toast.show({ type: 'warn', title: support.title, text: support.text, action: { label: 'Ayuda', run: () => Help.show(support.code) } });
     ui.notice.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.02)' }, { transform: 'scale(1)' }], { duration: 400, easing: EASE });
     return;
   }
   try {
     if (reuseDevice && ble.device) await ble.reconnect();
-    else await ble.connect();
+    else await ble.connect({ all });
   } catch (e) {
-    console.warn('[BLE]', e);
+    console.warn('[BLE]', e.stage || '', e);
     const info = explainBleError(e);
     if (info) {
       if (info.type !== 'info') Haptics.pulse([30, 50, 30]);
-      Toast.show(info);
+      Toast.show({ ...info, action: { label: info.reason === 'list' ? '¿No aparece?' : '¿Qué hago?', run: () => Help.show(info.reason) }, duration: info.type === 'info' ? 6000 : 9000 });
     }
   }
 }
+Help.onRetry = opts => tryConnect(false, opts);
+
+$('#helpBtn').addEventListener('click', () => { Haptics.pulse(8); Help.show(); });
+ui.notice.addEventListener('click', () => Help.show(support.ok ? 'bt' : support.code));
 
 ui.connectBtn.addEventListener('click', () => {
   Haptics.pulse(10);

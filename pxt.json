@@ -1,0 +1,27 @@
+{
+    "name": "seguridad-vial-coche",
+    "version": "1.0.0",
+    "description": "Programa del coche Maqueen + micro:bit v2 para la app Seguridad Vial (Bluetooth UART). © 2026 Adrián Bellamy Encinas · PolyForm Noncommercial 1.0.0",
+    "dependencies": {
+        "core": "*",
+        "bluetooth": "*",
+        "maqueen": "github:dfrobot/pxt-maqueen#v1.7.17"
+    },
+    "files": [
+        "main.ts"
+    ],
+    "supportedTargets": [
+        "microbit"
+    ],
+    "yotta": {
+        "config": {
+            "microbit-dal": {
+                "bluetooth": {
+                    "open": 1,
+                    "whitelist": 0,
+                    "security_level": null
+                }
+            }
+        }
+    }
+}

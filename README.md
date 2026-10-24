@@ -20,9 +20,9 @@ Web Bluetooth **solo funciona en páginas `https://` o en `localhost`**, y en na
 
 ### Opción A — GitHub Pages (la más fácil para el móvil)
 1. En GitHub, abre el repositorio → **Settings** → **Pages**.
-2. En *Build and deployment*: **Source = Deploy from a branch**, elige la rama y la carpeta **/ (root)** → **Save**.
-3. En 1–2 minutos tendrás una dirección `https://<usuario>.github.io/<repositorio>/`.
-4. Ábrela en **Chrome del móvil Android**. (Consejo: menú ⋮ → *Añadir a pantalla de inicio* para abrirla como una app.)
+2. En *Build and deployment*: **Source = Deploy from a branch**, rama **`claude/cool-franklin-7ql2xm`** y carpeta **/ (root)** → **Save**.
+3. En 1–2 minutos estará en **https://losbellamy4-dev.github.io/proyecto-bachillerato-robot-maquen/**
+4. Ábrela en **Chrome del móvil Android** escribiendo esa dirección (no desde WhatsApp, Drive ni el gestor de archivos: ahí no hay Bluetooth). Consejo: menú ⋮ → *Añadir a pantalla de inicio* para abrirla como una app.
 
 > GitHub Pages en repositorios **privados** requiere un plan de pago. Si el repo es privado, hazlo público o usa la opción B.
 
@@ -43,11 +43,11 @@ Con doble clic en `index.html` se ve toda la interfaz, pero la conexión Bluetoo
 
 ## 2. Cómo conectar con el micro:bit, paso a paso
 
-1. Descarga el programa de MakeCode al micro:bit y enciende el coche (con pilas cargadas).
+1. Descarga al micro:bit el programa de MakeCode de este repositorio (ver [*Programa del micro:bit*](#programa-del-microbit-makecode)) **con «No Pairing Required»** y enciende el coche (con pilas cargadas). En la pantalla del micro:bit debe salir el **símbolo de Bluetooth**.
 2. Activa el **Bluetooth** del móvil (en Android, también la **ubicación**).
 3. Abre la app (opción A o B) y pulsa **Conectar coche**. Verás el anillo de radar girando.
 4. En la lista, elige **BBC micro:bit [xxxxx]** y pulsa *Emparejar / Conectar*.
-5. Destello verde + estado **Conectado** en la cabecera = listo. La app manda `parar` y la velocidad actual para sincronizar.
+5. Destello verde + estado **Conectado** en la cabecera = listo. La app manda `parar` y la velocidad actual para sincronizar, el micro:bit contesta **`listo`** (sale abajo, en *Recibido*) y en su pantalla aparece ✔.
 6. Conduce:
    - **Mantén pulsada** una flecha para moverte; al **soltar**, el coche para solo.
    - **PARAR** (botón rojo central) frena siempre al instante.
@@ -55,6 +55,8 @@ Con doble clic en `index.html` se ve toda la interfaz, pero la conexión Bluetoo
 7. Para terminar, pulsa **Desconectar** (manda `parar` antes de cortar).
 
 Si se pierde la conexión, la app intenta **reconectar sola** 2 veces; si no lo consigue, aparece un aviso con el botón **Reconectar**.
+
+Si no conecta, pulsa el botón **?** de la cabecera (o *¿Qué hago?* en el aviso de error): sale una lista de comprobación que marca sola lo que puede comprobar (https, navegador, Bluetooth) y resalta la causa más probable del último error.
 
 ---
 
@@ -79,27 +81,27 @@ Notas para cuadrarlo con MakeCode:
 - `luces` y `seguridad` son **interruptores**: la app asume que al conectar ambos están en **OFF** (y así lo muestra). Haz que el micro:bit también arranque con ellos apagados.
 - Lo que el micro:bit envíe por UART (por ejemplo con `bluetooth uart escribir línea`) aparece abajo en **Recibido**.
 
-### Referencia rápida para MakeCode (JavaScript)
-No hace falta cambiar tu programa; esto es solo para comprobar que coincide:
+### Programa del micro:bit (MakeCode)
 
-```javascript
-bluetooth.startUartService()
-bluetooth.onUartDataReceived(serial.delimiters(Delimiters.NewLine), function () {
-    let cmd = bluetooth.uartReadUntil(serial.delimiters(Delimiters.NewLine))
-    if (cmd == "avanzar") {
-        // motores hacia delante
-    } else if (cmd == "parar") {
-        // motores parados
-    } else if (cmd.substr(0, 3) == "vel") {
-        let velocidad = parseFloat(cmd.substr(3))   // 0..100
-    }
-    // ... atras, izquierda, derecha, bocina, luces, seguridad
-})
-// Recomendado por seguridad: si se corta el Bluetooth, parar el coche.
-bluetooth.onBluetoothDisconnected(function () {
-    // motores parados
-})
-```
+El programa completo está en [`main.ts`](main.ts) y el proyecto en [`pxt.json`](pxt.json) (extensiones **bluetooth** y **maqueen**, y el ajuste **No Pairing Required** ya puesto).
+
+**Forma 1 — importarlo (ya trae el ajuste de emparejamiento):** en [makecode.microbit.org](https://makecode.microbit.org) → **Importar** → **Importar URL** → pega `https://github.com/losbellamy4-dev/proyecto-bachillerato-robot-maquen` → **Ir**.
+
+**Forma 2 — copiar y pegar:**
+1. Proyecto nuevo → **Extensiones**: añade **bluetooth** y **maqueen** (si pregunta por quitar *radio*, acepta).
+2. Rueda dentada ⚙ → **Configuración del proyecto** → marca **«No Pairing Required: Anyone can connect via Bluetooth»** → **Guardar**. *(Sin esto el micro:bit ignora al móvil: es el fallo más común.)*
+3. Cambia a **JavaScript**, borra todo, pega el contenido de `main.ts` y vuelve a **Bloques** si quieres verlo en bloques.
+
+Después: **Descargar** al micro:bit (con el cable USB). Al encenderlo debe salir el **símbolo de Bluetooth**.
+
+Qué hace:
+- Cada comando se procesa al instante; lo lento (pantalla, bocina, sensor) va en bucles aparte, para que un `parar` nunca espere.
+- `vel0…vel100` se pasa a la escala de los motores (0–255) empezando en 45, que es lo mínimo para que el coche se mueva. Si cambias la velocidad mientras se mueve, se aplica al momento.
+- Si se corta el Bluetooth, el coche **se para** y luces y seguridad vuelven a OFF (como la app al reconectar).
+- **Seguridad** ON: si va hacia delante y hay algo a menos de 15 cm, frena, pita y manda `freno` (sale en *Recibido*).
+- Pantalla: símbolo de Bluetooth = esperando al móvil · ✔ = conectado y parado · flecha = dirección.
+
+Es para el **Maqueen Lite** (extensión `maqueen` de DFRobot). El Maqueen Plus usa otra extensión y otros bloques de motor.
 
 ---
 
@@ -121,10 +123,12 @@ Para no depender de esto, la app pide las dos características y **elige por sus
 |---|---|
 | «Este navegador no puede usar Bluetooth» | Usa Chrome/Edge (Android, PC, Mac). En iPhone, la app Bluefy. |
 | «Abre la app por HTTPS» | Ábrela desde GitHub Pages o `localhost`. |
-| No aparece el micro:bit en la lista | Comprueba que el programa tiene el servicio UART iniciado, que el micro:bit no está conectado a otro móvil/PC y acércate. Reinicia el micro:bit (botón de reinicio, en la parte trasera). |
-| «Servicio UART no encontrado» | En MakeCode, usa el bloque *bluetooth iniciar servicio UART* y vuelve a descargar el programa. |
-| Conecta pero el coche no responde | Revisa que el micro:bit lee hasta el salto de línea (`Delimiters.NewLine`) y que los nombres de comando coinciden exactamente. |
-| En Android pide emparejar con código | En MakeCode, *Configuración del proyecto* → *No Pairing Required*. Si el móvil lo emparejó antes con otro programa, «olvida» el dispositivo en los ajustes de Bluetooth. |
+| «Has abierto el archivo directamente» | Ábrela con su dirección `https://…github.io/…` en Chrome, no desde el gestor de archivos, WhatsApp o Drive. |
+| No aparece el micro:bit en la lista | Comprueba que en su pantalla sale el símbolo de Bluetooth (programa cargado), que no está conectado a otro móvil/PC y acércate. En Android, Chrome necesita **ubicación** y el permiso **Dispositivos cercanos**. En la ayuda (**?**) puedes pulsar **Ver todos los dispositivos**. |
+| «El micro:bit no deja conectar» | Casi siempre es el emparejamiento: en MakeCode, *Configuración del proyecto* → **No Pairing Required** → vuelve a descargar. Y en el móvil, Ajustes → Bluetooth → «olvida» el micro:bit si lo emparejaste antes. |
+| «El micro:bit no tiene el Bluetooth UART» | Su programa no inicia el servicio UART: descárgale el programa de `main.ts`. |
+| «Conectado, pero el micro:bit no contesta» | Tiene un programa antiguo o distinto: el de este repositorio contesta `listo` al conectar. |
+| Conecta pero el coche no se mueve | Velocidad a 0, pilas bajas o interruptor del Maqueen apagado. Si usas otro programa, que lea hasta el salto de línea (`Delimiters.NewLine`) y que los comandos coincidan exactamente. |
 
 ---
 
