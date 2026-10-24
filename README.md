@@ -18,7 +18,12 @@ Web Bluetooth **solo funciona en páginas `https://` o en `localhost`**, y en na
 | iPhone / iPad | Safari, Chrome | ❌ → usa la app gratuita **Bluefy** |
 | Linux | Chrome | ⚠️ puede requerir activar `chrome://flags/#enable-experimental-web-platform-features` |
 
-### Opción A — GitHub Pages (la más fácil para el móvil)
+### Lo más fácil: ya está publicada
+Abre **https://seguridad-vial-microbit.vercel.app** en **Chrome del móvil Android** (escribiendo la dirección, no desde WhatsApp, Drive ni el gestor de archivos). No hace falta descargar nada.
+
+> ¿Por qué no vale el archivo descargado? El navegador solo deja usar Bluetooth en páginas `https://` (o en `localhost` en un ordenador). Un `index.html` abierto desde el móvil no es `https://`, así que la app se ve pero no puede conectar.
+
+### Opción A — GitHub Pages
 1. En GitHub, abre el repositorio → **Settings** → **Pages**.
 2. En *Build and deployment*: **Source = Deploy from a branch**, rama **`claude/cool-franklin-7ql2xm`** y carpeta **/ (root)** → **Save**.
 3. En 1–2 minutos estará en **https://losbellamy4-dev.github.io/proyecto-bachillerato-robot-maquen/**
